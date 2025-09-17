@@ -1,0 +1,16 @@
+streamlit
+gemini                # optional (for LLM)
+whisper               # openai/whisper or "whisper" package
+ftfy
+tqdm
+sentence-transformers
+faiss-cpu
+transformers
+torch
+Pillow
+scikit-learn
+python-multipart
+python-dotenv
+streamlit-audiorecorder
+audiorecorder
+google-generativeai
