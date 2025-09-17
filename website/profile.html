@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Krishi Sahayak</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .profile-pic {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="dashboard.html">🌱 Krishi Sahayak</a>
+            <div class="d-flex align-items-center">
+                 <a href="profile.html" class="navbar-text text-decoration-none me-3 fw-bold">My Profile</a>
+                 <a href="index.html" class="btn btn-outline-danger">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container" style="margin-top: 80px;">
+        <h1 class="h3 mb-4">My Profile (माझे प्रोफाइल)</h1>
+
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <img src="https://images.unsplash.com/photo-1596752399895-32e7c000f7c2?q=80&w=200" alt="Farmer Profile Picture" class="profile-pic mb-3">
+                        <h4 class="card-title">Ramesh Kumar</h4>
+                        <p class="text-muted mb-1"><i class="bi bi-geo-alt-fill"></i> Pune, Maharashtra</p>
+                        <p class="text-muted"><i class="bi bi-phone-fill"></i> +91 98********</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Edit Your Information</h5>
+                        <form>
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="fullName" value="Ramesh Kumar">
+                            </div>
+                            <div class="mb-3">
+                                <label for="mobileNumber" class="form-label">Mobile Number</label>
+                                <input type="tel" class="form-control" id="mobileNumber" value="9876543210" readonly>
+                                <small class="form-text text-muted">Mobile number cannot be changed.</small>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="state" class="form-label">State</label>
+                                    <input type="text" class="form-control" id="state" value="Maharashtra">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="district" class="form-label">District</label>
+                                    <input type="text" class="form-control" id="district" value="Pune">
+                                </div>
+                            </div>
+                             <div class="mb-3">
+                                <label for="language" class="form-label">Preferred Language</label>
+                                <select id="language" class="form-select">
+                                    <option>English</option>
+                                    <option selected>Marathi (मराठी)</option>
+                                    <option>Hindi (हिन्दी)</option>
+                                </select>
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">My Crops (माझी पिके)</label>
+                                <p class="text-muted small">Select the crops you cultivate for personalized advice.</p>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="cropSugarcane" checked>
+                                        <label class="form-check-label" for="cropSugarcane">Sugarcane (ऊस)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="cropOnion">
+                                        <label class="form-check-label" for="cropOnion">Onion (कांदा)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="cropCotton" checked>
+                                        <label class="form-check-label" for="cropCotton">Cotton (कापूस)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="cropSoybean">
+                                        <label class="form-check-label" for="cropSoybean">Soybean (सोयाबीन)</label>
+                                    </div>
+                                     <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="cropGrapes">
+                                        <label class="form-check-label" for="cropGrapes">Grapes (द्राक्षे)</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-success mt-4">Save Changes</button>
+                            <button type="button" class="btn btn-outline-secondary mt-4">Change Password</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

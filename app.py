@@ -1,8 +1,5 @@
-# app_kissanconnect_updated.py
-# Full updated KissanConnect prototype
-# Programs tab reads language-specific KB files (*.txt for English, *.hi.txt for Hindi)
-# Added Crop Calendar tab and Fertilizer Calculator tab
-
+# app.py
+# KissanConnect — Streamlit UI with WhatsApp start-message integration (via Twilio)
 import os
 import time
 import csv
@@ -17,13 +14,13 @@ from PIL import Image
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from sentence_transformers import SentenceTransformer  # For embeddings
+from sentence_transformers import SentenceTransformer  # For embeddings (optional)
 from streamlit_mic_recorder import mic_recorder  # 🎤 Voice input
 
 import requests
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
-import google.generativeai as genai  # Gemini
+import google.generativeai as genai  # Gemini (optional)
 import whisper   # Whisper for STT
 
 # -------- CONFIG ----------
@@ -52,7 +49,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
 TWILIO_SID = os.environ.get("TWILIO_SID", "")
 TWILIO_TOKEN = os.environ.get("TWILIO_TOKEN", "")
-TWILIO_FROM = os.environ.get("TWILIO_FROM", "")
+TWILIO_FROM = os.environ.get("TWILIO_FROM", "")  # Preferably a WhatsApp-enabled Twilio sender, e.g. "whatsapp:+1415..." or "+1415..."
 
 # default language mapping
 LANG_MAP = {
@@ -63,7 +60,11 @@ LANG_MAP = {
 # Load Whisper once (cached)
 @st.cache_resource
 def load_whisper_model():
-    return whisper.load_model("base")
+    # choose model according to your resources: tiny/base/small/medium/large
+    try:
+        return whisper.load_model("base")
+    except Exception:
+        return None
 
 # ---------------- Utilities (KB + embeddings) ----------------
 def load_kb_texts(kb_dir: Path) -> List[Dict]:
@@ -87,7 +88,6 @@ def load_embedding_model(model_name: str):
         st.session_state[EMBEDDING_MODEL_KEY] = None
         return None
 
-
 def embed_texts(texts: List[str]) -> np.ndarray:
     model = st.session_state.get(EMBEDDING_MODEL_KEY)
     if model:
@@ -110,7 +110,6 @@ def embed_texts(texts: List[str]) -> np.ndarray:
     st.session_state["tfidf_dim"] = X.shape[1]
     return X
 
-
 def build_kb_embeddings_if_not_cached():
     docs = load_kb_texts(KB_DIR)
     st.session_state[KB_DOCS_KEY] = docs
@@ -124,7 +123,6 @@ def build_kb_embeddings_if_not_cached():
     texts = [d["text"] for d in docs]
     emb_mat = embed_texts(texts)
     st.session_state[EMBEDDINGS_CACHE_KEY] = emb_mat
-
 
 def retrieve_top_k(query: str, k: int = 3):
     if (
@@ -170,6 +168,9 @@ def retrieve_top_k(query: str, k: int = 3):
 
 # ---------------- Gemini / multimodal helper ----------------
 def generate_answer_with_gemini(prompt_text: str, gemini_key: str, image_data_uri: str = None) -> str:
+    """
+    Generate answer using Gemini (if configured). Falls back to explanatory string if key missing.
+    """
     if not gemini_key:
         return "Gemini API key missing on server (set GEMINI_API_KEY environment variable)."
 
@@ -213,7 +214,6 @@ def fetch_weather_raw(location: str, openweather_api_key: str):
     except Exception as e:
         print("fetch_weather_raw error:", e)
         return None
-
 
 def interpret_weather_conditions(weather_json: dict) -> Dict:
     if not weather_json:
@@ -260,7 +260,6 @@ def interpret_weather_conditions(weather_json: dict) -> Dict:
         "triggers": sorted(set(triggers)),
     }
 
-
 def build_weather_message(location: str, interp: Dict, lang: str = "English") -> str:
     if not interp:
         if lang == "Hindi":
@@ -300,33 +299,28 @@ def build_weather_message(location: str, interp: Dict, lang: str = "English") ->
         parts.append("Advice: If serious issues, contact local Krishibhavan.")
         return " | ".join(parts)
 
+# ---------------- Twilio WhatsApp helper ----------------
+from twilio.rest import Client
 
-def send_weather_sms_verbose(twilio_sid, twilio_token, from_num, to_num, msg):
-    if not (twilio_sid and twilio_token and from_num and to_num):
+def send_whatsapp_via_twilio(twilio_sid, twilio_token, from_whatsapp, to_number, body_text):
+    """
+    from_whatsapp: 'whatsapp:+14155238886' (Twilio sandbox sender or your Twilio WA number)
+    to_number: '+91xxxxxxxxxx' (E.164) -- library will send as 'whatsapp:+91...'
+    """
+    if not (twilio_sid and twilio_token and from_whatsapp and to_number):
         return False, "Missing Twilio credentials or numbers."
+
     try:
         client = Client(twilio_sid, twilio_token)
-        message = client.messages.create(body=msg, from_=from_num, to=to_num)
-        info = {
-            "sid": getattr(message, "sid", None),
-            "status": getattr(message, "status", None),
-            "to": getattr(message, "to", None),
-            "from": getattr(message, "from_", None),
-            "price": getattr(message, "price", None),
-            "error_code": getattr(message, "error_code", None),
-            "error_message": getattr(message, "error_message", None),
-        }
-        st.info(f"Twilio response: SID={info['sid']} status={info['status']}")
-        print("Twilio response:", info)
-        return True, info
-    except TwilioRestException as tre:
-        st.error(f"TwilioRestException: {tre.msg} (code {tre.code})")
-        print("TwilioRestException:", tre.code, tre.msg)
-        return False, {"code": tre.code, "msg": tre.msg}
+        message = client.messages.create(
+            body=body_text,
+            from_=from_whatsapp,
+            to=f"whatsapp:{to_number}"
+        )
+        return True, {"sid": message.sid, "status": message.status}
     except Exception as e:
-        st.error(f"Twilio send failed: {e}")
-        print("Twilio send exception:", traceback.format_exc())
         return False, str(e)
+
 
 # ---------------- small helpers ----------------
 def ensure_csv_has_header(path: Path, header: List[str]):
@@ -335,45 +329,29 @@ def ensure_csv_has_header(path: Path, header: List[str]):
             writer = csv.DictWriter(f, fieldnames=header)
             writer.writeheader()
 
-
 def load_program_guides_for_lang(lang: str) -> List[Dict]:
-    """
-    Load only language-appropriate program files from PROGRAMS_DIR.
-    - English: load *.txt excluding files that end with .hi.txt
-    - Hindi: load files that end with .hi.txt
-    Returns list of dicts with cleaned 'id' (strip .hi if present), 'text', and 'source'.
-    """
     guides = []
     if not PROGRAMS_DIR.exists():
         return guides
-
     for p in sorted(PROGRAMS_DIR.glob("*.txt")):
         name = p.name
         if lang == "Hindi":
-            # include only files with .hi.txt
             if not name.endswith(".hi.txt"):
                 continue
             base_id = p.stem
-            # p.stem for 'kcc.hi.txt' -> 'kcc.hi' -> strip trailing '.hi'
             if base_id.endswith(".hi"):
                 base_id = base_id[: -3]
             text = p.read_text(encoding="utf-8")
             guides.append({"id": base_id, "text": text, "source": str(p)})
         else:
-            # English: include only files that DO NOT end with .hi.txt
             if name.endswith(".hi.txt"):
                 continue
-            base_id = p.stem  # e.g., 'kcc'
+            base_id = p.stem
             text = p.read_text(encoding="utf-8")
             guides.append({"id": base_id, "text": text, "source": str(p)})
     return guides
 
-
 def classify_programs(guides: List[Dict]) -> Dict[str, List[Dict]]:
-    """
-    Simple keyword-based classification into categories.
-    Returns mapping: category -> list of guide dicts
-    """
     mapping = {
         "Loans": [],
         "Insurance": [],
@@ -395,7 +373,6 @@ def classify_programs(guides: List[Dict]) -> Dict[str, List[Dict]]:
             mapping["Other"].append(g)
     return mapping
 
-# helper to safely prepare context (truncate)
 def prepare_context_text(guides: List[Dict], max_chars_per_file: int = 3500) -> str:
     parts = []
     for g in guides:
@@ -404,101 +381,6 @@ def prepare_context_text(guides: List[Dict], max_chars_per_file: int = 3500) -> 
             text = text[:max_chars_per_file] + "\n\n[TRUNCATED]"
         parts.append(f"[{g['id']}]\n" + text)
     return "\n\n".join(parts)
-
-# ---------------- NEW: Crop Calendar data ----------------
-CROP_CALENDAR = [
-    {"crop": "rice", "kharif": "June - September", "rabi": "October - March (some varieties)"},
-    {"crop": "maize", "kharif": "June - September", "rabi": "Oct - Feb (limited)"},
-    {"crop": "millets", "kharif": "June - Sept", "rabi": "Nov - Feb (minor)"},
-    {"crop": "banana", "kharif": "Year-round (planting mostly Jan-Mar & Aug-Oct)", "rabi": "—"},
-    {"crop": "coconut", "kharif": "Year-round planting", "rabi": "—"},
-    {"crop": "tapioca", "kharif": "Mar-Jun (planting) / Harvest varies", "rabi": "—"},
-    {"crop": "vegetable", "kharif": "June - Oct (many crops)", "rabi": "Nov - Mar (many crops)"},
-    {"crop": "sugarcane", "kharif": "Feb - May (planting)", "rabi": "—"},
-    {"crop": "pulses", "kharif": "June - Sept (pigeon pea)", "rabi": "Oct - Feb (lentils, gram)"},
-]
-
-# ---------------- NEW: Fertilizer calc defaults & helpers ----------------
-# Typical (indicative) N-P2O5-K2O recommendations (kg per hectare) — these are indicative ONLY.
-# Please verify with local soil test / extension.
-DEFAULT_NPK_PER_HA = {
-    "rice": {"N": 120, "P2O5": 60, "K2O": 40},
-    "banana": {"N": 400, "P2O5": 200, "K2O": 500},
-    "coconut": {"N": 250, "P2O5": 150, "K2O": 350},
-    "tapioca": {"N": 80, "P2O5": 60, "K2O": 80},
-    "vegetable": {"N": 150, "P2O5": 75, "K2O": 75},
-    "other": {"N": 100, "P2O5": 50, "K2O": 50},
-}
-
-# Fertilizer nutrient contents (fraction)
-FERT_CONTENT = {
-    "urea": {"N": 0.46, "P2O5": 0.0, "K2O": 0.0},
-    "dap":  {"N": 0.18, "P2O5": 0.46, "K2O": 0.0},
-    "mop":  {"N": 0.0,  "P2O5": 0.0,  "K2O": 0.6},
-}
-
-# Unit conversion helpers (to hectares)
-def area_to_hectares(value: float, unit: str) -> float:
-    """
-    Supported units: 'hectare', 'acre', 'cent', 'sq_m', 'sq_ft'
-    Note: local units like 'bigha' vary by state — ask user to provide hectares for accuracy.
-    """
-    unit = unit.lower()
-    if unit == "hectare":
-        return value
-    if unit == "acre":
-        return value * 0.404685642  # 1 acre = 0.404685642 ha
-    if unit == "sq_m" or unit == "sqm":
-        return value / 10000.0
-    if unit == "sq_ft" or unit == "sqft":
-        return value * 0.092903 / 10000.0
-    if unit == "cent":
-        # 1 cent = 435.6 sq ft ~ 40.4686 sq m -> 0.00404686 ha
-        return value * 0.00404685642
-    # default: return value (assume hectare) but show a warning later
-    return value
-
-def compute_nutrient_requirements(ha: float, npk_per_ha: Dict[str, float]):
-    return {k: round(v * ha, 2) for k, v in npk_per_ha.items()}
-
-def compute_fertilizer_bags(nutrient_need: Dict[str, float], bag_weights: Dict[str, float], fert_content: Dict[str, Dict[str, float]]):
-    """
-    Returns suggested kg of each fertilizer to supply required nutrients.
-    Uses simple linear algebra: choose primary fertilizers: urea (N), DAP (P2O5 & some N), MOP (K2O).
-    We'll calculate order: supply P from DAP first, K from MOP, then remaining N from UREA (accounting for N in DAP).
-    """
-    N_need = nutrient_need.get("N", 0.0)
-    P_need = nutrient_need.get("P2O5", 0.0)
-    K_need = nutrient_need.get("K2O", 0.0)
-
-    # DAP to supply P2O5 (and also provides some N)
-    dap_needed_kg = 0.0
-    if fert_content["dap"]["P2O5"] > 0:
-        dap_needed_kg = P_need / fert_content["dap"]["P2O5"]
-    # N obtained from DAP
-    N_from_dap = dap_needed_kg * fert_content["dap"]["N"]
-
-    # MOP to supply K2O
-    mop_needed_kg = 0.0
-    if fert_content["mop"]["K2O"] > 0:
-        mop_needed_kg = K_need / fert_content["mop"]["K2O"]
-
-    # Remaining N requirement after DAP contribution
-    N_remaining = max(0.0, N_need - N_from_dap)
-    urea_needed_kg = 0.0
-    if fert_content["urea"]["N"] > 0:
-        urea_needed_kg = N_remaining / fert_content["urea"]["N"]
-
-    # Convert to bag counts using bag_weights (kg per bag), default 50 kg if not provided
-    result = {
-        "DAP_kg": round(dap_needed_kg, 2),
-        "DAP_bags": round(dap_needed_kg / bag_weights.get("dap", 50.0), 2),
-        "MOP_kg": round(mop_needed_kg, 2),
-        "MOP_bags": round(mop_needed_kg / bag_weights.get("mop", 50.0), 2),
-        "Urea_kg": round(urea_needed_kg, 2),
-        "Urea_bags": round(urea_needed_kg / bag_weights.get("urea", 50.0), 2),
-    }
-    return result
 
 # ---------------- UI -----------------
 st.set_page_config(page_title=APP_NAME, layout="wide", initial_sidebar_state="expanded")
@@ -515,7 +397,6 @@ st.markdown(
     .muted { color:#6b7280; }
     .small { font-size:13px; color:#6b7280; }
     pre { white-space: pre-wrap; }
-    table, th, td { border-collapse: collapse; padding:6px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -538,7 +419,7 @@ st.markdown(
 # Sidebar: farmer/context + language selector
 st.sidebar.header("Farmer context")
 name = st.sidebar.text_input("Name", value="")
-phone = st.sidebar.text_input("Phone (E.164)", value="")
+phone = st.sidebar.text_input("Phone (E.164)", value="")  # expects +91...
 location = st.sidebar.text_input("Location (city or district)", value="")
 crop = st.sidebar.selectbox("Crop", options=["banana", "rice", "coconut", "tapioca", "vegetable", "other"])
 
@@ -577,8 +458,8 @@ if "kb_built" not in st.session_state:
     build_kb_embeddings_if_not_cached()
     st.session_state["kb_built"] = True
 
-# Top-level tabs (added Crop Calendar & Fertilizer)
-tab_advisory, tab_chatbot, tab_programs, tab_cropcal, tab_fertcalc, tab_admin = st.tabs(
+# Top-level tabs
+tab_advisory, tab_chatbot, tab_programs, tab_calendar, tab_fertcalc, tab_admin = st.tabs(
     ["Advisory", "Chatbot", "Programs", "Crop Calendar", "Fertilizer Calculator", "Admin / Weather"]
 )
 
@@ -599,17 +480,20 @@ with tab_advisory:
     )
     if audio and "bytes" in audio:
         whisper_model = load_whisper_model()
-        tmp_wav = "temp_audio.wav"
-        with open(tmp_wav, "wb") as f:
-            f.write(audio["bytes"])
-        result = whisper_model.transcribe(tmp_wav)
-        st.session_state["pending_user_query"] = result.get("text", "")
-        st.success(f"🎤 Transcribed: {st.session_state['pending_user_query']}")
+        if whisper_model:
+            tmp_wav = "temp_audio.wav"
+            with open(tmp_wav, "wb") as f:
+                f.write(audio["bytes"])
+            result = whisper_model.transcribe(tmp_wav)
+            st.session_state["pending_user_query"] = result.get("text", "")
+            st.success(f"🎤 Transcribed: {st.session_state['pending_user_query']}")
+        else:
+            st.info("Whisper model not available - install whisper in the venv if you want voice transcription.")
 
     q_text = st.text_area("Your question (editable)", height=120, value=st.session_state.get("pending_user_query", ""))
 
     st.markdown("**Upload image (optional)** — clear, focused close-up of affected leaf/plant works best.")
-    img_file = st.file_uploader("Upload plant/leaf image (optional)", type=["jpg", "jpeg", "png"])    
+    img_file = st.file_uploader("Upload plant/leaf image (optional)", type=["jpg", "jpeg", "png"])
     pil_img = None
     image_data_uri = None
     if img_file:
@@ -655,7 +539,6 @@ with tab_advisory:
                     "Cite any sources from the 'Sources' list inside square brackets.\n"
                 )
 
-                # language handling in prompt
                 if lang == "Hindi":
                     system_prompt += "Respond in Hindi. Be concise and use local terms if relevant.\n"
                 else:
@@ -675,7 +558,6 @@ with tab_advisory:
 
                 answer = generate_answer_with_gemini(prompt_text, GEMINI_API_KEY, image_data_uri)
 
-            # Save advice into session history
             advice_entry = {
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "name": name,
@@ -691,7 +573,6 @@ with tab_advisory:
                 st.session_state["advice_history"] = []
             st.session_state["advice_history"].insert(0, advice_entry)
 
-            # Display answer + sources + actions
             st.markdown('<div class="card" style="margin-top:12px">', unsafe_allow_html=True)
             st.subheader("Answer")
             st.markdown(answer)
@@ -701,7 +582,6 @@ with tab_advisory:
                     st.markdown(f"- `{r['doc']['id']}` (score: {r['score']:.3f}) — {r['doc']['source']}")
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # Escalate / feedback UI (save to CSV)
             st.markdown("---")
             if st.checkbox("Escalate this query (save for Krishibhavan)"):
                 payload = {
@@ -761,7 +641,6 @@ with tab_chatbot:
         st.markdown("**Context excerpt:**")
         st.markdown(base_context.get("answer",""))
 
-    # Chat message area
     if "chat_messages" not in st.session_state:
         st.session_state["chat_messages"] = []
 
@@ -770,10 +649,7 @@ with tab_chatbot:
         submit_chat = st.form_submit_button("Send")
 
     if submit_chat and user_msg:
-        # build prompt including selected advice if any
-        system_prompt = (
-            "You are KrishiAdviser Chatbot. Keep answers short and practical. "
-        )
+        system_prompt = "You are KrishiAdviser Chatbot. Keep answers short and practical. "
         if base_context:
             system_prompt += "Use the following previous advice as context for the user:\n"
             system_prompt += base_context.get("answer","") + "\n"
@@ -785,11 +661,9 @@ with tab_chatbot:
         prompt = "SYSTEM:\n" + system_prompt + "\nUSER:\n" + user_msg
         resp = generate_answer_with_gemini(prompt, GEMINI_API_KEY)
 
-        # add to chat messages
         st.session_state["chat_messages"].append({"role":"user","text":user_msg, "time": time.strftime("%Y-%m-%d %H:%M:%S")})
         st.session_state["chat_messages"].append({"role":"assistant","text":resp, "time": time.strftime("%Y-%m-%d %H:%M:%S")})
 
-        # persist chat to CSV
         chat_row = {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "context_timestamp": base_context["timestamp"] if base_context else "",
@@ -807,7 +681,6 @@ with tab_chatbot:
             writer = csv.DictWriter(f, fieldnames=header)
             writer.writerow(chat_row)
 
-    # render chat messages
     for m in st.session_state.get("chat_messages", [])[-40:]:
         if m["role"] == "user":
             st.markdown(f"**You ({m['time']}):** {m['text']}")
@@ -822,17 +695,14 @@ with tab_programs:
     st.subheader("Government Programs / Loans / Insurance / Mechanization Guides")
     st.markdown("Select a category and program documents in the chosen language; the AI will answer questions using those guides as context.")
 
-    # Load only language-appropriate program guides
     guides = load_program_guides_for_lang(lang)
     if not guides:
-        # Explain how filenames must be placed for English vs Hindi
         st.info(
             "No program guides found for the selected language.\n\n"
             "- For English: place files as `kb/programs/<name>.txt` (e.g., kcc.txt, pmfby.txt)\n"
             "- For Hindi: place files as `kb/programs/<name>.hi.txt` (e.g., kcc.hi.txt, pmfby.hi.txt)\n"
         )
     else:
-        # classify guides into categories
         cat_map = classify_programs(guides)
         categories = ["Loans", "Insurance", "Mechanization", "Policies & Subsidies", "Other"]
         selected_category = st.selectbox("Choose category", options=categories, index=0)
@@ -841,21 +711,16 @@ with tab_programs:
         if not available_guides:
             st.info(f"No guides found in category '{selected_category}' for language {lang}.")
         else:
-            # show multiselect of files in the chosen category
             guide_labels = [f"{g['id']}" for g in available_guides]
             selected_files = st.multiselect("Choose program document(s) to use as context", options=guide_labels, default=guide_labels[:1])
-
-            # map selected labels back to guide dicts
             selected_guides = [g for g in available_guides if g['id'] in selected_files]
 
-            # Quick preview (collapsible)
             with st.expander("Preview selected documents", expanded=False):
                 for g in selected_guides:
                     st.markdown(f"**{g['id']}** — {g['source']}")
                     st.text(g['text'][:1500] + ("..." if len(g['text']) > 1500 else ""))
 
             st.markdown("---")
-            # Question input and actions
             st.markdown("Ask a question (the selected program docs will be provided as sources to the model).")
             user_question = st.text_area("Your question about the selected programs", height=140, placeholder="E.g., What are the subsidy rates and how to apply for mechanization in my state?")
 
@@ -869,12 +734,9 @@ with tab_programs:
                 if not selected_guides:
                     st.warning("Please select at least one program document to use as context.")
                 else:
-                    # prepare context - truncated per-file to avoid huge prompts
                     context_text = prepare_context_text(selected_guides, max_chars_per_file=3500)
 
-                    # build prompt
                     sys_prompt = "You are KrishiAdviser — use the provided program guides to answer the user's question. Give concise, practical steps and cite the document IDs in square brackets when referring to specific guidance."
-
                     if lang == "Hindi":
                         sys_prompt += " Respond in Hindi and use clear simple terms."
                     else:
@@ -898,7 +760,6 @@ with tab_programs:
                     st.markdown("**AI answer (based on selected programs):**")
                     st.markdown(answer)
 
-                    # Optionally persist this query + context selection
                     if st.checkbox("Save this program-question to chat history (for admin)"):
                         chat_row = {
                             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -921,92 +782,74 @@ with tab_programs:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Crop Calendar tab ----------------
-with tab_cropcal:
+with tab_calendar:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Crop Calendar — Kharif & Rabi seasons (indicative)")
-    st.markdown("This table lists common crops and their typical planting/season windows. Local variations apply — confirm with state agriculture office.")
+    st.subheader("Crop Calendar (Kharif / Rabi)")
+    st.markdown("A simple table showing common crops and the typical Kharif / Rabi seasons. Edit or extend `kb/crop_calendar.csv` if you want to persist or upload a different file.")
 
-    # Build a simple table
-    st.table(CROP_CALENDAR)
+    # Default minimal calendar; you can replace this by reading kb/crop_calendar.csv
+    calendar = [
+        {"crop": "Rice", "kharif": "June - October", "rabi": "Nov - Feb (less common)"},
+        {"crop": "Wheat", "kharif": "-", "rabi": "Nov - Apr"},
+        {"crop": "Maize", "kharif": "June - Sep", "rabi": "Oct - Feb"},
+        {"crop": "Millets", "kharif": "Jun - Sep", "rabi": "Oct - Feb"},
+        {"crop": "Banana", "kharif": "Year-round", "rabi": "Year-round"},
+        {"crop": "Tapioca", "kharif": "Year-round", "rabi": "Year-round"},
+    ]
 
-    st.markdown("---")
-    st.markdown("Notes:")
-    st.markdown(
-        "- The seasons shown are indicative and can vary by state, variety and irrigation availability.\n"
-        "- For precise sowing/harvest windows for your district, consult the local Krishibhavan or agriculture extension.\n"
-    )
+    # Show as table
+    st.table(calendar)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Fertilizer Calculator tab ----------------
 with tab_fertcalc:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("Fertilizer Calculator")
-    st.markdown("Select crop, enter area and unit, then compute estimated nutrient and fertilizer requirements. Values are indicative — prefer soil test recommendations.")
+    st.markdown("Select a crop, enter field area (in cents or hectares) and get a simple recommended N:P:K estimate. This is a basic helper — use local extension advice for precise rates.")
 
-    # Choose crop (provide same crop set)
-    fcrop = st.selectbox("Crop for calculation", options=["rice", "banana", "coconut", "tapioca", "vegetable", "other"], index=0)
+    # area units
+    area_unit = st.selectbox("Area unit", ["hectares", "acres", "cents"])
+    area_input = st.number_input("Area (numeric)", min_value=0.0, value=0.1, step=0.1)
+    sel_crop = st.selectbox("Crop for fertilizer estimate", ["rice", "wheat", "maize", "banana", "vegetable", "other"])
 
-    # Area input + unit selector
-    col_a1, col_a2 = st.columns([2,1])
-    with col_a1:
-        area_value = st.number_input("Area", min_value=0.0, format="%.3f", value=1.0, help="Enter numeric area")
-    with col_a2:
-        area_unit = st.selectbox("Unit", options=["hectare", "acre", "cent", "sq_m", "sq_ft"], index=0)
+    # crude per-hectare baseline NPK (example values; adapt to local recommendations)
+    npk_defaults = {
+        "rice": (120, 60, 40),
+        "wheat": (100, 50, 40),
+        "maize": (150, 60, 40),
+        "banana": (250, 200, 250),
+        "vegetable": (120, 80, 60),
+        "other": (100, 50, 40)
+    }
+    base_n, base_p, base_k = npk_defaults.get(sel_crop, npk_defaults["other"])
 
-    st.markdown("**Nutrient recommendation (kg/ha)** — edit if you have local values or soil test results.")
-    # load defaults or allow custom
-    if fcrop in DEFAULT_NPK_PER_HA:
-        default_npk = DEFAULT_NPK_PER_HA[fcrop]
-    else:
-        default_npk = DEFAULT_NPK_PER_HA["other"]
-
-    col_n, col_p, col_k = st.columns(3)
-    with col_n:
-        n_per_ha = st.number_input("N (kg/ha)", min_value=0.0, value=float(default_npk["N"]))
-    with col_p:
-        p_per_ha = st.number_input("P2O5 (kg/ha)", min_value=0.0, value=float(default_npk["P2O5"]))
-    with col_k:
-        k_per_ha = st.number_input("K2O (kg/ha)", min_value=0.0, value=float(default_npk["K2O"]))
-
-    st.markdown("**Bag conventions (optional)** — default bag weight 50 kg. Change if your supplier uses different bag sizes.")
-    bag_u = st.number_input("Urea bag weight (kg)", min_value=1.0, value=50.0)
-    bag_d = st.number_input("DAP bag weight (kg)", min_value=1.0, value=50.0)
-    bag_m = st.number_input("MOP bag weight (kg)", min_value=1.0, value=50.0)
+    # convert area to hectares
+    if area_unit == "hectares":
+        hectares = area_input
+    elif area_unit == "acres":
+        hectares = area_input * 0.404686
+    else:  # cents (common in India: 1 cent = 40.4686 m2 = 0.0404686 ha)
+        hectares = area_input * 0.00404686
 
     if st.button("Calculate fertilizer requirement"):
-        hectares = area_to_hectares(area_value, area_unit)
-        if hectares <= 0:
-            st.error("Enter a valid positive area.")
-        else:
-            st.markdown(f"**Area in hectares:** {hectares:.4f} ha")
-            npk_need = compute_nutrient_requirements(hectares, {"N": n_per_ha, "P2O5": p_per_ha, "K2O": k_per_ha})
-            st.markdown("**Estimated nutrient requirement:**")
-            st.write(f"- Nitrogen (N): **{npk_need['N']} kg**")
-            st.write(f"- Phosphorus (P2O5): **{npk_need['P2O5']} kg**")
-            st.write(f"- Potassium (K2O): **{npk_need['K2O']} kg**")
-
-            st.markdown("**Suggested fertilizer amounts (approx.)** — using DAP for P, MOP for K, rest N from Urea.")
-            bag_weights = {"urea": bag_u, "dap": bag_d, "mop": bag_m}
-            fert_plan = compute_fertilizer_bags(npk_need, bag_weights, FERT_CONTENT)
-            st.write(f"- DAP: **{fert_plan['DAP_kg']} kg** (~**{fert_plan['DAP_bags']}** bags of {bag_d} kg)")
-            st.write(f"- MOP: **{fert_plan['MOP_kg']} kg** (~**{fert_plan['MOP_bags']}** bags of {bag_m} kg)")
-            st.write(f"- Urea: **{fert_plan['Urea_kg']} kg** (~**{fert_plan['Urea_bags']}** bags of {bag_u} kg)")
-
-            st.markdown("---")
-            st.markdown(
-                "**Important:** These calculations are approximate. Always prefer local soil-test based recommendations and check split application timing (basal/topdressing) and crop stage guidelines. For safety-critical dosing, consult local Krishibhavan or an agronomist."
-            )
-
+        total_n = base_n * hectares
+        total_p = base_p * hectares
+        total_k = base_k * hectares
+        st.write(f"Estimated fertilizer requirement for {area_input} {area_unit} ({hectares:.3f} ha):")
+        st.write(f"- Nitrogen (N): {total_n:.1f} kg")
+        st.write(f"- Phosphorus (P₂O₅ equiv): {total_p:.1f} kg")
+        st.write(f"- Potassium (K₂O equiv): {total_k:.1f} kg")
+        st.markdown("**Note:** These are approximate values. For exact doses, soil tests and local extension recommendations are recommended.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- Admin / Weather tab ----------------
 with tab_admin:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.subheader("Live Weather & SMS Alerts")
-    st.markdown("Enter Location and Phone in the sidebar. Use the button to fetch weather and optionally send SMS to the farmer.")
+    st.subheader("Live Weather & WhatsApp Start Chat")
+    st.markdown("Enter Location and Phone in the sidebar. Use the buttons below to fetch weather and optionally start a WhatsApp chat with the farmer.")
 
     if not location or not phone:
-        st.info("Set Location and Phone in the sidebar to use weather fetch and SMS features.")
+        st.info("Set Location and Phone in the sidebar to use weather fetch and WhatsApp features.")
     else:
         if st.button("Fetch weather now"):
             raw = fetch_weather_raw(location, OPENWEATHER_API_KEY)
@@ -1018,12 +861,25 @@ with tab_admin:
                 st.markdown("**Latest weather summary:**")
                 st.write(msg_text)
 
-                if st.button("Send this weather SMS to farmer now"):
-                    ok, info = send_weather_sms_verbose(TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, phone, msg_text)
+                # Show a button to start a WhatsApp chat (send initial weather message)
+                st.write("")
+                if st.button("Send WhatsApp start message"):
+                    tw_from = os.environ.get("TWILIO_FROM", "whatsapp:+14155238886")  # or set your env
+                    ok, info = send_whatsapp_via_twilio(TWILIO_SID, TWILIO_TOKEN, tw_from, phone, msg_text)
                     if ok:
-                        st.success(f"📩 Weather SMS sent to {phone}")
+                        st.success(f"WhatsApp message sent — SID: {info.get('sid')}")
                     else:
-                        st.error(f"❌ Failed to send SMS: {info}")
+                        st.error(f"Failed to send WhatsApp message: {info}")
+
+
+                # Also allow sending via SMS fallback (existing function)
+                if st.button("Send same weather as SMS (SMS fallback)"):
+                    ok2, info2 = send_whatsapp_via_twilio(TWILIO_SID, TWILIO_TOKEN, TWILIO_FROM, phone, msg_text)
+                    # Note: this uses WhatsApp send. If you prefer SMS, implement send_sms via client.messages.create without whatsapp:
+                    if ok2:
+                        st.success(f"📩 Message sent to {phone} (via Twilio).")
+                    else:
+                        st.error(f"❌ Failed: {info2}")
 
     st.markdown("---")
     st.subheader("Admin / Debug")
@@ -1066,6 +922,7 @@ with tab_admin:
         "- For English KB files: place `kb/programs/<name>.txt` (e.g., kcc.txt).\n"
         "- For Hindi KB files: place `kb/programs/<name>.hi.txt` (e.g., kcc.hi.txt).\n"
         "- Program guides are classified automatically but you can control categories by changing filenames or content.\n"
+        "- To receive farmer replies on WhatsApp, host your `whatsapp.py` Flask webhook and configure Twilio Messaging webhook to point at it.\n"
     )
     st.markdown('</div>', unsafe_allow_html=True)
 

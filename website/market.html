@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Intelligence - Krishi Sahayak</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        body {
+            background-color: #f0f2f5;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .price-up {
+            color: #198754; /* Green for price increase */
+        }
+        .price-down {
+            color: #dc3545; /* Red for price decrease */
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="dashboard.html">🌱 Krishi Sahayak</a>
+            <div class="d-flex align-items-center">
+                 <a href="profile.html" class="navbar-text text-decoration-none me-3">My Profile</a>
+                 <a href="index.html" class="btn btn-outline-danger">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container" style="margin-top: 80px;">
+        <h1 class="h3 mb-4">Market Intelligence (बाजार भाव)</h1>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label for="cropSelect" class="form-label fw-bold">Select Crop (पीक)</label>
+                        <select id="cropSelect" class="form-select">
+                            <option selected>All Crops</option>
+                            <option>Onion (कांदा)</option>
+                            <option>Tomato (टोमॅटो)</option>
+                            <option>Soybean (सोयाबीन)</option>
+                            <option>Cotton (कापूस)</option>
+                            <option>Pomegranate (डाळिंब)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="stateSelect" class="form-label fw-bold">Select State (राज्य)</label>
+                        <select id="stateSelect" class="form-select">
+                            <option selected>Maharashtra</option>
+                            <option>Karnataka</option>
+                            <option>Madhya Pradesh</option>
+                            <option>Gujarat</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="mandiSelect" class="form-label fw-bold">Select Market (बाजार)</label>
+                        <select id="mandiSelect" class="form-select">
+                            <option selected>All Markets</option>
+                            <option>Pune (पुणे)</option>
+                            <option>Nashik (नाशिक)</option>
+                            <option>Solapur (सोलापूर)</option>
+                            <option>Nagpur (नागपूर)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-success w-100">Apply Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header fw-bold">
+                Live Market Prices for September 17, 2025
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Crop Name</th>
+                            <th scope="col">Market Name</th>
+                            <th scope="col">Min Price (₹/Quintal)</th>
+                            <th scope="col">Max Price (₹/Quintal)</th>
+                            <th scope="col">Modal Price (₹/Quintal)</th>
+                            <th scope="col">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Onion (कांदा)</strong></td>
+                            <td>Pune (पुणे)</td>
+                            <td>1,600</td>
+                            <td>2,100</td>
+                            <td class="fw-bold">1,850</td>
+                            <td><span class="price-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Soybean (सोयाबीन)</strong></td>
+                            <td>Nagpur (नागपूर)</td>
+                            <td>4,450</td>
+                            <td>4,600</td>
+                            <td class="fw-bold">4,500</td>
+                            <td><span class="price-down"><i class="bi bi-arrow-down-circle-fill"></i> Down</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Cotton (कापूस)</strong></td>
+                            <td>Solapur (सोलापूर)</td>
+                            <td>6,800</td>
+                            <td>7,050</td>
+                            <td class="fw-bold">6,900</td>
+                            <td><span class="price-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span></td>
+                        </tr>
+                         <tr>
+                            <td><strong>Tomato (टोमॅटो)</strong></td>
+                            <td>Nashik (नाशिक)</td>
+                            <td>1,100</td>
+                            <td>1,400</td>
+                            <td class="fw-bold">1,250</td>
+                            <td><span class="price-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Pomegranate (डाळिंब)</strong></td>
+                            <td>Pune (पुणे)</td>
+                            <td>7,500</td>
+                            <td>9,000</td>
+                            <td class="fw-bold">8,200</td>
+                            <td><span class="price-down"><i class="bi bi-arrow-down-circle-fill"></i> Down</span></td>
+                        </tr>
+                         <tr>
+                            <td><strong>Onion (कांदा)</strong></td>
+                            <td>Nashik (नाशिक)</td>
+                            <td>1,700</td>
+                            <td>2,250</td>
+                            <td class="fw-bold">1,920</td>
+                            <td><span class="price-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

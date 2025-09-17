@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expert Dashboard - Krishi Sahayak</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f0f2f5; }
+        .navbar { box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .query-image { max-width: 250px; border-radius: 8px; }
+        .accordion-button:not(.collapsed) { background-color: #cfe2ff; }
+        .ai-suggestion { border-left: 4px solid #ffc107; padding-left: 15px; background-color: #fff8e1; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">🌱 Expert Dashboard</a>
+            <div class="d-flex align-items-center">
+                 <span class="navbar-text me-3">Welcome, Dr. Verma</span>
+                 <a href="expert-login.html" class="btn btn-outline-danger">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container" style="margin-top: 80px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3">Escalated Queries Queue</h1>
+            <span class="badge bg-danger rounded-pill fs-6">3 New Queries</span>
+        </div>
+
+        <div class="accordion" id="expertAccordion">
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                        <span class="fw-bold">Query #101: Image Diagnosis from Ramesh K. (Pune)</span>
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#expertAccordion">
+                    <div class="accordion-body">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <h5>Farmer's Submission</h5>
+                                <p><strong>Query Text:</strong> "My tomato plant leaves are turning yellow and have spots. What is this?"</p>
+                                <img src="https://images.unsplash.com/photo-1599599810694-b5b3730fe27a?q=80&w=400" alt="Tomato plant" class="query-image">
+                                <p class="mt-3 text-muted small">Submitted: 17 Sep 2025, 10:15 AM</p>
+                            </div>
+                            <div class="col-md-7">
+                                <h5>Expert Action Required</h5>
+                                <div class="p-3 rounded mb-3 ai-suggestion">
+                                    <p class="mb-1 fw-bold"><i class="bi bi-robot"></i> AI's Initial Suggestion:</p>
+                                    <p class="mb-0 small">"Could be a nutrient deficiency. Confidence: 65%."</p>
+                                </div>
+                                <form>
+                                    <div class="mb-3">
+                                        <label for="expertResponse1" class="form-label"><strong>Your Definitive Response:</strong></label>
+                                        <textarea class="form-control" id="expertResponse1" rows="6" placeholder="Provide a detailed solution, including treatment steps..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Submit Response & Resolve</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                         <span class="fw-bold">Query #102: Complex Text Query from Priya S. (Nashik)</span>
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#expertAccordion">
+                    <div class="accordion-body">
+                         <p><strong>Query Text:</strong> "After using the recommended fertilizer for grapes, my soil pH has dropped significantly. What organic methods can I use to raise it before the next season?"</p>
+                         <div class="p-3 rounded mb-3 ai-suggestion">
+                            <p class="mb-1 fw-bold"><i class="bi bi-robot"></i> AI's Response:</p>
+                            <p class="mb-0 small">"I am sorry, I do not have enough information on organic soil pH management. Escalating to an expert."</p>
+                        </div>
+                        <form>
+                            <div class="mb-3">
+                                <label for="expertResponse2" class="form-label"><strong>Your Definitive Response:</strong></label>
+                                <textarea class="form-control" id="expertResponse2" rows="5"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">Submit Response & Resolve</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
