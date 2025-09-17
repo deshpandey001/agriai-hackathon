@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KrishiConnect</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet" />
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">🌱 KrishiConnect</a>
+    <div class="ms-auto">
+      
+    </div>
+  </div>
+</nav>
+
+<header class="hero text-center py-5">
+  <div class="container">
+    <h1 class="display-5">Digital Krishi Officer</h1>
+    <p class="lead">Ask questions, upload crop images, explore government schemes, and get weather-aware advice.</p>
+    <a class="btn btn-lg btn-success" href="{{ url_for('advisory_page') }}">Ask for Advice</a>
+  </div>
+</header>
+
+<section class="container py-5">
+    <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Advisory</h5>
+          <p class="card-text">Multimodal advisory using image, text and voice (voice coming soon).</p>
+          <a href="{{ url_for('advisory_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Chatbot</h5>
+          <p class="card-text">Continue conversations or start a new chat based on past advice.</p>
+          <a href="{{ url_for('chatbot_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Programs</h5>
+          <p class="card-text">Browse government programs and ask targeted questions.</p>
+          <a href="{{ url_for('programs_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Fertilizer Calculator</h5>
+          <p class="card-text">Quick N:P:K estimates for your field area.</p>
+          <a href="{{ url_for('fert_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Crop Calendar</h5>
+          <p class="card-text">Seasonal calendar to plan sowing and harvesting.</p>
+          <a href="{{ url_for('crop_calendar_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h5 class="card-title">Admin / Weather</h5>
+          <p class="card-text">Admin tools to fetch weather and see escalations/feedback.</p>
+          <a href="{{ url_for('admin_page') }}" class="stretched-link"></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="bg-dark text-white py-4 mt-5">
+  <div class="container text-center">© 2025 KrishiConnect</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

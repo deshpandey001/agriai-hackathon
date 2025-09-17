@@ -1,0 +1,23 @@
+timestamp,context_timestamp,user,phone,location,crop,language,user_msg,assistant_msg
+2025-09-17 11:37:03,2025-09-17 11:35:25,Varad Deshpande,+917057965991,pune,banana,English,how dangerous is the Sigatoka disease,"Hello Varad,
+
+Sigatoka disease is very serious for banana plants, though it is not harmful to humans.
+
+It destroys the leaves, which act as the plant's food factory. This leads to:
+*   **Smaller fruit bunches** (lower yield).
+*   **Poor quality fruit** that may ripen too soon.
+*   A weakened plant overall.
+
+Following the sanitation and spray steps I mentioned earlier is crucial to control the spread and protect your harvest."
+2025-09-17T18:57:03.307858,,hi,"(LLM not configured) — Gemini API key or SDK missing on server.
+
+SYSTEM:
+You are KrishiAdviser Chatbot. Keep answers short and practical.
+Respond in English.
+USER:
+hi",English
+2025-09-17T19:11:21.049343,,hi,Hello!  How can I help you today?,English
+2025-09-17T19:11:53.037230,,"based on the previous advice , give me proper pesticides names",Please provide the previous advice.  I need that information to recommend appropriate pesticides.,English
+2025-09-17T20:01:18.799821,,hi,Hello! How can I help your farm today?,English
+2025-09-17T20:01:33.107600,,what should i do to prevent drying of leaves ?,"Water deeply and regularly, especially during dry spells.  Mulch around plants. Ensure proper drainage to avoid waterlogging.",English
+2025-09-17T20:01:51.138571,,can you give me watering schedule,"Please tell me the plant type, pot size, and your climate (sunny, shady, etc.).",English

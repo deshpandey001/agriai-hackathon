@@ -1,0 +1,10 @@
+PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)
+Overview
+
+Direct income support program that provides small payments to eligible farmer families. Beneficiary lists and payment statuses are available on the PM-KISAN portal.
+
+Practical notes
+
+Always verify beneficiary status and discourage farmers from relying on unofficial channels for enrollment.
+
+Keep copies of application receipts and confirmation messages for disputes.

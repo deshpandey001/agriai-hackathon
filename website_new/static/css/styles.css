@@ -1,0 +1,170 @@
+/* styles.css — updated for KissanConnect UI */
+/* ----------------------------------------- */
+/* Color system and base variables */
+:root{
+  --primary: #0b6b3a;
+  --accent: #2a9d8f;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --bg: #f6faf8;
+  --glass: rgba(255,255,255,0.85);
+  --success: #16a34a;
+  --danger: #dc2626;
+  --shadow: 0 6px 20px rgba(10,20,12,0.06);
+  --radius: 12px;
+  --max-content-width: 1100px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+}
+
+/* Typography & page defaults */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #f8fdfb 0%, #f3fbf7 100%);
+  color: #0f1724;
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.45;
+  padding-bottom:48px;
+}
+
+/* Container helpers */
+.container{
+  max-width: var(--max-content-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Hero / header */
+.hero{
+  background: linear-gradient(90deg, rgba(11,107,58,0.95), rgba(42,157,143,0.85));
+  color: white;
+  padding: 28px 0;
+  border-radius: 12px;
+}
+
+/* Navbar */
+.navbar{padding: .6rem 0}
+.navbar-brand{
+  color: var(--primary) !important;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.navbar .btn{
+  border-radius: 8px;
+  padding: .375rem .6rem;
+  font-size: .9rem;
+}
+
+/* Cards */
+.card{
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  border: none;
+}
+.card-title{ color: var(--primary); font-weight:700; margin-bottom:8px; }
+
+/* Buttons */
+.btn-primary, .btn-success{
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: none;
+}
+.btn-primary:hover, .btn-success:hover{ filter:brightness(.95); transform: translateY(-1px); }
+.btn-outline-secondary{ border-radius:8px; }
+
+/* Muted / small text */
+.text-muted, .small, .muted{ color: var(--muted) }
+
+/* Forms */
+.form-control, .form-select{
+  border-radius: 8px;
+  box-shadow: none;
+  border: 1px solid rgba(15,23,36,0.08);
+  padding: .5rem .65rem;
+}
+.form-control:focus, .form-select:focus{
+  outline: none;
+  box-shadow: 0 4px 18px rgba(11,107,58,0.06);
+  border-color: var(--accent);
+}
+
+/* Inputs / file */
+input[type="file"]{
+  padding: .35rem;
+}
+
+/* Panels / utility */
+.card.p-3{ padding: 18px; }
+.card.p-4{ padding: 24px; }
+
+/* Program list and preview */
+.list-group-item{
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(15,23,36,0.04);
+}
+.list-group-item:hover{ background: #f8fffb; cursor: pointer; }
+.list-group-item .small{ display:block; margin-top:6px; color:var(--muted) }
+
+/* Preview area */
+pre{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace; white-space: pre-wrap; }
+
+/* Chat messages */
+#messages{ background: linear-gradient(180deg,#ffffff,#fbfffb); border-radius:10px; padding:8px; min-height:260px; }
+#messages .text-start .d-inline-block, #messages .text-end .d-inline-block{
+  max-width: 86%;
+  word-break: break-word;
+  line-height: 1.35;
+  padding: .6rem .8rem;
+}
+#messages .text-start .d-inline-block{ background: #f3f7f4; border-radius: 12px 12px 12px 3px; color:#082015; }
+#messages .text-end .d-inline-block{ background: var(--primary); color: white; border-radius: 12px 12px 3px 12px; }
+
+/* Small info boxes */
+.alert{ border-radius:10px; }
+.card .small.text-muted{ font-size: .85rem; }
+
+/* Tables */
+.table thead th{ background: transparent; border-bottom: 2px solid rgba(12,17,22,0.06); }
+.table-striped tbody tr:nth-of-type(odd){ background: #fbfffb; }
+
+/* Fertilizer calc output */
+#out .card{ background: linear-gradient(180deg,#fff,#fbfffb) }
+
+/* Admin / weather */
+#weatherArea .card{ background: linear-gradient(180deg,#fff,#f7fff9); }
+
+/* Responsive helpers */
+@media (max-width: 767px){
+  .container{ padding-left: 12px; padding-right: 12px; }
+  .navbar-brand{ font-size: 1rem; }
+  .card{ padding: 12px; }
+  #messages{ min-height: 220px; }
+}
+
+/* Focus states for accessibility */
+button:focus, a:focus, input:focus, textarea:focus { outline: 2px solid rgba(11,107,58,0.12); outline-offset: 2px; }
+
+/* Tiny UX / scrollbar */
+::-webkit-scrollbar { height: 8px; width: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(15,23,36,0.08); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Lightweight utility classes */
+.text-success{ color: var(--success) !important; }
+.text-danger{ color: var(--danger) !important; }
+.dotted { border-style: dashed; border-color: rgba(11,107,58,0.08); }
+
+/* Footer caption */
+footer.caption{ text-align:center; font-size:.85rem; color:var(--muted); margin-top:24px; }
+
+/* Minor helpers to match Streamlit look */
+.kc-badge { display:inline-block; padding:6px 10px; border-radius:10px; background: rgba(11,107,58,0.08); color:var(--primary); font-weight:600; }

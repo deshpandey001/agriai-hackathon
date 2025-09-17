@@ -1,0 +1,73 @@
+timestamp,location,crop,query,answer_excerpt,language
+2025-09-17T18:56:46.065123,,banana,banana leaves are drying,"(LLM not configured) — Gemini API key or SDK missing on server.
+
+SYSTEM:
+You are KrishiAdviser — a concise practical agricultural assistant.
+Location: 
+Crop: banana
+Language: English
+Use the following sources when relevant and cite them in square brackets.
+
+
+SOURCES:
+[insurance_overview]
+Crop Insurance 
+
+
+
+Application tips
+
+Assist farmers with timely enrolment at the beginning of the season.
+
+Ensure bank account details and Aadhaar are correctly recorded.
+
+Claim tips
+
+Document damage with photog",English
+2025-09-17T18:58:33.010150,,banana,banana leaves are drying up,"(LLM not configured) — Gemini API key or SDK missing on server.
+
+SYSTEM:
+You are KrishiAdviser — a concise practical agricultural assistant.
+Location: 
+Crop: banana
+Language: English
+Use the following sources when relevant and cite them in square brackets.
+
+
+SOURCES:
+[insurance_overview]
+Crop Insurance 
+
+
+
+Application tips
+
+Assist farmers with timely enrolment at the beginning of the season.
+
+Ensure bank account details and Aadhaar are correctly recorded.
+
+Claim tips
+
+Document damage with photog",English
+2025-09-17T19:07:39.222554,,banana,banana leaves are drying up,(Gemini not configured: Please set GEMINI_API_KEY),English
+2025-09-17T19:08:23.145891,,banana,banana leaves are drying up,(Gemini not configured: Please set GEMINI_API_KEY),English
+2025-09-17T19:09:47.607675,,banana,banana leaves are drying up,(Gemini not configured: Please set GEMINI_API_KEY),English
+2025-09-17T19:11:04.837637,,banana,banana leaves are drying up,"Several factors can cause banana leaves to dry up.  To help diagnose the problem, I need more information. Please describe:
+
+* **Severity:** Are a few leaves affected, or is it widespread?
+* **Location:** Are the drying leaves at the top, bottom, or all over the plant?
+* **Symptoms:** Are the leaves simply drying and browning, or are there other symptoms like spots, discoloration, or pests?
+* **Recent weather:** Has there been a prolonged drought, unusual heat, or heavy rain?
+* **Irrigation:** H",English
+2025-09-17T19:59:08.272327,pune,coconut,"Coconut has red palm weevil attack, what treatment can I do?","नमस्कार!  आपके नारियल के पेड़ में लाल ताड़ का वेविल (रेड पाम वेविल) का प्रकोप हुआ है।  इसके इलाज के लिए कई तरीके हैं, परंतु सबसे प्रभावी उपाय रोकथाम और शुरुआती पहचान है।  यहाँ कुछ उपाय दिए गए हैं:
+
+**1.  प्रकोप की पहचान और शुरुआती उपचार:**
+
+* **लक्षणों की जाँच:**  वेविल के प्रकोप के लक्षणों में पत्तियों का पीला पड़ना, पेड़ का झुकना, और तने से रस का रिसाव शामिल है।  यदि आपको ये लक्षण दिखाई दें तो तुरंत कार्रवाई करें।  तने को ध्यान से देखें, क्या उसमें छेद हैं?  
+* **संक्रमित भागों को हटाना:**  यद",Hindi
+2025-09-17T20:00:57.407208,pune,banana,banana leaves are drying up,"Several factors can cause banana leaves to dry up.  To provide the best advice, I need more information.  Please describe:
+
+* **Extent of drying:** Are a few leaves affected, or is it widespread across the plant?
+* **Appearance of drying:** Are the leaves turning brown and crispy, or are they yellowing and wilting?  Are there any spots or lesions?
+* **Recent weather conditions:** Has there been a prolonged drought, excessive rainfall, or unusually high temperatures?
+* **Irrigation practices:** H",English
