@@ -34,6 +34,34 @@
                     <input type="password" class="form-control" id="password" required>
                 </div>
 
+                <!-- Farmer context fields merged from Streamlit sidebar -->
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone (E.164)</label>
+                    <input type="text" class="form-control" id="phone" placeholder="e.g., +919xxxxxxxxx">
+                </div>
+                <div class="mb-3">
+                    <label for="location" class="form-label">Location (city or district)</label>
+                    <input type="text" class="form-control" id="location" placeholder="e.g., Pune">
+                </div>
+                <div class="mb-3">
+                    <label for="crop" class="form-label">Crop</label>
+                    <select class="form-select" id="crop">
+                        <option value="banana">banana</option>
+                        <option value="rice">rice</option>
+                        <option value="coconut">coconut</option>
+                        <option value="tapioca">tapioca</option>
+                        <option value="vegetable">vegetable</option>
+                        <option value="other">other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Language</label>
+                    <select class="form-select" id="language">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                    </select>
+                </div>
+
                 <div class="d-grid mt-4">
                     <button type="submit" class="btn btn-success btn-lg">Create Account</button>
                 </div>
@@ -78,6 +106,16 @@
                 .then((userCredential) => {
                     // Signed in 
                     console.log('User created:', userCredential.user);
+                    // Save farmer context locally for front-end pages
+                    const fctx = {
+                        name: document.getElementById('fullName').value || '',
+                        phone: document.getElementById('phone').value || '',
+                        location: document.getElementById('location').value || '',
+                        crop: document.getElementById('crop').value || 'other',
+                        language: document.getElementById('language').value || 'English',
+                    };
+                    localStorage.setItem('farmerContext', JSON.stringify(fctx));
+
                     messageDiv.innerHTML = `<div class="alert alert-success">Account created successfully! Redirecting to login...</div>`;
                     setTimeout(() => {
                         window.location.href = 'login.html';

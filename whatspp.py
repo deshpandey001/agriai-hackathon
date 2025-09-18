@@ -1,5 +1,3 @@
-## whatsapp.py
-
 import os
 import base64
 import io
@@ -17,8 +15,8 @@ from twilio.twiml.messaging_response import MessagingResponse
 load_dotenv()
 
 # --- IMPORTANT: Set your API Keys ---
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBBfTiVphdFLxiNYxHT19L84q5KIZJNRHs"
-os.environ["OPENWEATHER_API_KEY"] = "4337f96976782c5f8e16e37157194bd3"
+os.environ["GOOGLE_API_KEY"] = "AIzaSyDDr9J9joHVOW8LBIZ-8ADwyvct29lp94c"
+os.environ["OPENWEATHER_API_KEY"] = "7d273d8981d8eee42e38b8e027dfa60c"
 
 if not os.getenv("GOOGLE_API_KEY"):
     raise ValueError("Google AI API key not found. Please set it.")

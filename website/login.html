@@ -29,6 +29,38 @@
                     <input type="password" class="form-control" id="password" required autocomplete="current-password">
                 </div>
 
+                <!-- Farmer context fields merged from Streamlit sidebar -->
+                <div class="mb-3">
+                    <label for="farmerName" class="form-label">Farmer Name</label>
+                    <input type="text" class="form-control" id="farmerName" placeholder="e.g., Ram Kumar">
+                </div>
+                <div class="mb-3">
+                    <label for="phoneInput" class="form-label">Phone (E.164)</label>
+                    <input type="text" class="form-control" id="phoneInput" placeholder="e.g., +919xxxxxxxxx">
+                </div>
+                <div class="mb-3">
+                    <label for="locationInput" class="form-label">Location (city or district)</label>
+                    <input type="text" class="form-control" id="locationInput" placeholder="e.g., Pune">
+                </div>
+                <div class="mb-3">
+                    <label for="cropInput" class="form-label">Crop</label>
+                    <select class="form-select" id="cropInput">
+                        <option value="banana">banana</option>
+                        <option value="rice">rice</option>
+                        <option value="coconut">coconut</option>
+                        <option value="tapioca">tapioca</option>
+                        <option value="vegetable">vegetable</option>
+                        <option value="other">other</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Language</label>
+                    <select class="form-select" id="langSelect">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                    </select>
+                </div>
+
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="" id="rememberMe">
@@ -74,12 +106,25 @@
         const emailField = document.getElementById('email');
         const rememberMeCheckbox = document.getElementById('rememberMe');
 
-        // --- NEW: Check for a saved email when the page loads ---
+                // --- NEW: Check for a saved email and farmer context when the page loads ---
         document.addEventListener('DOMContentLoaded', () => {
             if (localStorage.getItem('rememberedEmail')) {
                 emailField.value = localStorage.getItem('rememberedEmail');
                 rememberMeCheckbox.checked = true;
             }
+                    // Load stored farmer context if available
+                    if (localStorage.getItem('farmerContext')) {
+                        try {
+                            const ctx = JSON.parse(localStorage.getItem('farmerContext'));
+                            document.getElementById('farmerName').value = ctx.name || '';
+                            document.getElementById('phoneInput').value = ctx.phone || '';
+                            document.getElementById('locationInput').value = ctx.location || '';
+                            document.getElementById('cropInput').value = ctx.crop || 'other';
+                            document.getElementById('langSelect').value = ctx.language || 'English';
+                        } catch (e) {
+                            console.warn('Invalid farmerContext in localStorage');
+                        }
+                    }
         });
 
         // --- Handle Login ---
@@ -98,7 +143,16 @@
                         // Remove the saved email
                         localStorage.removeItem('rememberedEmail');
                     }
-                    
+                        // Save farmer context locally for front-end pages
+                        const fctx = {
+                            name: document.getElementById('farmerName').value || '',
+                            phone: document.getElementById('phoneInput').value || '',
+                            location: document.getElementById('locationInput').value || '',
+                            crop: document.getElementById('cropInput').value || 'other',
+                            language: document.getElementById('langSelect').value || 'English',
+                        };
+                        localStorage.setItem('farmerContext', JSON.stringify(fctx));
+
                     messageDiv.innerHTML = `<div class="alert alert-success">Login successful! Redirecting...</div>`;
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
