@@ -25,7 +25,7 @@
 <div class="container" style="margin-top:30px">
   <div class="card p-4 shadow">
     <h4>Ask for advisory</h4>
-    <p class="text-muted">Type your question and optionally upload an image. Select language, crop and location for better context.</p>
+    <p class="text-muted">Type your question or use voice, optionally upload an image. Select language, crop and location for better context.</p>
 
     <div class="row g-2 mb-3">
       <div class="col-md-4">
@@ -48,12 +48,29 @@
     </div>
 
     <div class="mb-3">
+      <label class="form-label small">Ask (typed or transcribed)</label>
       <textarea id="question" class="form-control" rows="4" placeholder="Describe symptoms / ask your question..."></textarea>
     </div>
 
     <div class="mb-3">
+      <label class="form-label small">Image (optional)</label>
       <input id="image" type="file" accept="image/*" class="form-control"/>
       <div class="form-text">Clear close-up of affected leaf/plant works best.</div>
+      <div id="imagePreview" class="mt-2" style="display:none;">
+        <img id="imagePreviewImg" src="" alt="preview" style="max-width:200px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.1)"/>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label small">Voice (optional)</label>
+      <div class="d-flex gap-2 align-items-center">
+        <button id="recordBtn" class="btn btn-outline-primary">Start Recording</button>
+        <button id="stopBtn" class="btn btn-outline-secondary" disabled>Stop</button>
+        <button id="playBtn" class="btn btn-outline-success" disabled>Play</button>
+        <div id="recStatus" class="small text-muted ms-2">No recording</div>
+      </div>
+      <div id="audioPreviewArea" class="mt-2"></div>
+      <div class="form-text mt-1">After you stop recording the audio will be transcribed automatically and inserted into the question box.</div>
     </div>
 
     <div class="d-flex gap-2">
@@ -66,7 +83,8 @@
 </div>
 
 <script>
-async function toDataURL(file){
+/* ---------- helper: file -> dataURL ---------- */
+async function fileToDataURL(file){
   return new Promise((res, rej) => {
     const reader = new FileReader();
     reader.onload = () => res(reader.result);
@@ -75,16 +93,130 @@ async function toDataURL(file){
   });
 }
 
-function showMsg(html){
-  document.getElementById('answerArea').innerHTML = html;
+/* ---------- image preview handling ---------- */
+document.getElementById('image').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) {
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('imagePreviewImg').src = '';
+    return;
+  }
+  try {
+    const dataUrl = await fileToDataURL(f);
+    document.getElementById('imagePreviewImg').src = dataUrl;
+    document.getElementById('imagePreview').style.display = 'block';
+    // store data URL on element for sending
+    document.getElementById('image').dataset.dataurl = dataUrl;
+  } catch (err) {
+    console.error('Image read error', err);
+  }
+});
+
+/* ---------- audio recording + auto-transcribe ---------- */
+let mediaRecorder = null;
+let recordedChunks = [];
+let lastAudioBlob = null;
+let lastAudioDataUrl = null;
+
+async function blobToDataURL(blob){
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(blob);
+  });
 }
 
+async function startRecordingFlow(){
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) recordedChunks.push(ev.data); };
+    mediaRecorder.onstop = async () => {
+      lastAudioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+      lastAudioDataUrl = await blobToDataURL(lastAudioBlob);
+      // show play button and audio preview
+      const audioUrl = URL.createObjectURL(lastAudioBlob);
+      const audioEl = document.createElement('audio');
+      audioEl.controls = true;
+      audioEl.src = audioUrl;
+      const area = document.getElementById('audioPreviewArea');
+      area.innerHTML = '';
+      area.appendChild(audioEl);
+      document.getElementById('playBtn').disabled = false;
+      document.getElementById('recStatus').innerText = 'Recording saved — transcribing...';
+      // auto-transcribe by sending multipart 'audio' to /api/transcribe_local
+      await transcribeBlobAndInsert(lastAudioBlob);
+    };
+    mediaRecorder.start();
+    document.getElementById('recStatus').innerText = 'Recording...';
+    document.getElementById('recordBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+  } catch (e) {
+    console.error('startRecordingFlow', e);
+    alert('Cannot access microphone: ' + (e.message || e));
+  }
+}
+
+function stopRecordingFlow(){
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    // stop tracks
+    if (mediaRecorder.stream) mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  document.getElementById('recordBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+}
+
+async function transcribeBlobAndInsert(blob){
+  try {
+    const fd = new FormData();
+    fd.append('audio', blob, 'rec.webm');
+    const resp = await fetch('/api/transcribe_local', { method: 'POST', body: fd });
+    const j = await resp.json();
+    if (resp.ok && j.ok && j.text) {
+      const q = document.getElementById('question');
+      const existing = q.value.trim();
+      q.value = (existing ? existing + '\n' : '') + j.text;
+      document.getElementById('recStatus').innerText = 'Transcription inserted';
+    } else {
+      console.warn('transcription failed', j);
+      document.getElementById('recStatus').innerText = 'Transcription failed';
+      alert('Transcription failed: ' + (j.error || 'unknown'));
+    }
+  } catch (e) {
+    console.error('transcribeBlobAndInsert error', e);
+    document.getElementById('recStatus').innerText = 'Transcription request failed';
+    alert('Transcription request failed');
+  }
+}
+
+document.getElementById('recordBtn').addEventListener('click', ()=> startRecordingFlow());
+document.getElementById('stopBtn').addEventListener('click', ()=> stopRecordingFlow());
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  // play the last audio (if present)
+  if (!lastAudioBlob) return;
+  const url = URL.createObjectURL(lastAudioBlob);
+  const a = new Audio(url);
+  a.play();
+});
+
+/* ---------- UI: clear button ---------- */
 document.getElementById('clearBtn').addEventListener('click', ()=>{
   document.getElementById('question').value = '';
   document.getElementById('image').value = '';
-  showMsg('');
+  delete document.getElementById('image').dataset.dataurl;
+  document.getElementById('imagePreview').style.display = 'none';
+  document.getElementById('imagePreviewImg').src = '';
+  document.getElementById('audioPreviewArea').innerHTML = '';
+  lastAudioBlob = null;
+  lastAudioDataUrl = null;
+  document.getElementById('recStatus').innerText = 'No recording';
+  document.getElementById('answerArea').innerHTML = '';
 });
 
+/* ---------- submit advisory ---------- */
 document.getElementById('askBtn').addEventListener('click', async ()=>{
   const q = document.getElementById('question').value.trim();
   const f = document.getElementById('image').files[0];
@@ -92,25 +224,24 @@ document.getElementById('askBtn').addEventListener('click', async ()=>{
   const crop = document.getElementById('crop').value || '';
   const location = document.getElementById('location').value || '';
 
-  if(!q && !f){
-    alert('Please type a question or upload an image.');
+  if (!q && !f && !lastAudioDataUrl) {
+    alert('Please type a question, upload an image, or record audio.');
     return;
   }
 
   let image_base64 = null;
-  if(f){
-    try{
-      image_base64 = await toDataURL(f);
-    }catch(e){
-      console.error('Image read failed', e);
-    }
+  if (f) {
+    try {
+      image_base64 = await fileToDataURL(f);
+    } catch (e) { console.error('Image read failed', e); }
   }
 
   showMsg('<div class="text-muted">Generating answer…</div>');
 
-  try{
+  try {
     const payload = { query: q, location: location, crop: crop, language: lang };
-    if(image_base64) payload.image_base64 = image_base64;
+    if (image_base64) payload.image_base64 = image_base64;
+    if (lastAudioDataUrl) payload.audio_base64 = lastAudioDataUrl;
 
     const resp = await fetch('{{ url_for("api_get_advice") }}', {
       method: 'POST',
@@ -119,16 +250,34 @@ document.getElementById('askBtn').addEventListener('click', async ()=>{
     });
 
     const js = await resp.json();
-    if(resp.ok && js.ok){
+    if (resp.ok && js.ok) {
       const safe = js.answer.replace(/\n/g,'<br>');
-      showMsg('<div class="card p-3 bg-light">'+safe+'</div>');
+      let html = '<div class="card p-3 bg-light">'+safe+'</div>';
+      if (js.image_preview) {
+        html = '<div class="row"><div class="col-md-4"><img src="'+js.image_preview+'" style="max-width:100%;border-radius:6px"/></div><div class="col-md-8">'+html+'</div></div>';
+      }
+      showMsg(html);
+      // Optionally you could store session id locally to reuse in chatbot
+      console.log('session id', js.session_id);
     } else {
       const err = js.error || js.answer || 'No answer received';
       showMsg('<div class="alert alert-warning">'+err+'</div>');
     }
-  }catch(e){
+  } catch (e) {
     console.error(e);
     showMsg('<div class="alert alert-danger">Request failed — is the backend running?</div>');
+  }
+});
+
+function showMsg(html){
+  document.getElementById('answerArea').innerHTML = html;
+}
+
+/* ---------- convenience: allow Enter to submit when focus in question (with Shift+Enter for newline) ---------- */
+document.getElementById('question').addEventListener('keydown', function(e){
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('askBtn').click();
   }
 });
 </script>

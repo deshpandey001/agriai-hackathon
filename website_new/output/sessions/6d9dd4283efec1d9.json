@@ -1,0 +1,26 @@
+{
+  "session_id": "6d9dd4283efec1d9",
+  "created_at": "2025-09-18T06:45:28.846259",
+  "language": "English",
+  "question": "banana leaves are drying up",
+  "transcription": null,
+  "query_augmented": "banana leaves are drying up",
+  "location": "",
+  "crop": "banana",
+  "weather_info": "",
+  "image_saved": true,
+  "image_preview": "/static/uploads/9886794622cf4db1.jpg",
+  "answer": "The drying up of banana leaves can have several causes.  To diagnose the problem and recommend solutions, I need more information. Please describe:\n\n* **The extent of the drying:** Are only the leaf tips drying, or are entire leaves affected? Are older or younger leaves more severely impacted?  A picture would be extremely helpful (referencing the image provided would be ideal if it shows the issue).\n* **The appearance of the leaves:** Are the leaves yellowing, browning, or becoming brittle before drying? Are there any spots, lesions, or other unusual markings?\n* **Recent weather conditions:**  Have there been periods of drought, excessive heat, or unusual rainfall?\n* **Irrigation practices:** How frequently are you irrigating, and how much water are you applying?\n* **Soil conditions:** What is the soil type like? Is it well-drained?\n* **Fertilization:** What type and amount of fertilizer are you using?  Have you noticed any nutrient deficiencies?\n* **Pest and disease presence:** Have you observed any insects, fungal growth, or other signs of disease on the plants?\n\n\nOnce I have this information, I can provide more specific advice.  In the meantime, consider checking for common banana problems such as Panama disease, Fusarium wilt, or Sigatoka leaf spot.  Also ensure adequate watering, especially during dry periods.  Proper fertilization is crucial for healthy banana growth.  If pests or diseases are suspected, consulting a local agricultural extension office or expert is advised.",
+  "messages": [
+    {
+      "role": "user",
+      "text": "banana leaves are drying up",
+      "ts": "2025-09-18T06:45:28.846259"
+    },
+    {
+      "role": "assistant",
+      "text": "The drying up of banana leaves can have several causes.  To diagnose the problem and recommend solutions, I need more information. Please describe:\n\n* **The extent of the drying:** Are only the leaf tips drying, or are entire leaves affected? Are older or younger leaves more severely impacted?  A picture would be extremely helpful (referencing the image provided would be ideal if it shows the issue).\n* **The appearance of the leaves:** Are the leaves yellowing, browning, or becoming brittle before drying? Are there any spots, lesions, or other unusual markings?\n* **Recent weather conditions:**  Have there been periods of drought, excessive heat, or unusual rainfall?\n* **Irrigation practices:** How frequently are you irrigating, and how much water are you applying?\n* **Soil conditions:** What is the soil type like? Is it well-drained?\n* **Fertilization:** What type and amount of fertilizer are you using?  Have you noticed any nutrient deficiencies?\n* **Pest and disease presence:** Have you observed any insects, fungal growth, or other signs of disease on the plants?\n\n\nOnce I have this information, I can provide more specific advice.  In the meantime, consider checking for common banana problems such as Panama disease, Fusarium wilt, or Sigatoka leaf spot.  Also ensure adequate watering, especially during dry periods.  Proper fertilization is crucial for healthy banana growth.  If pests or diseases are suspected, consulting a local agricultural extension office or expert is advised.",
+      "ts": "2025-09-18T06:45:28.846259"
+    }
+  ]
+}

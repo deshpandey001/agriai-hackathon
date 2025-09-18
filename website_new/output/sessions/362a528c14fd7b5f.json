@@ -1,0 +1,27 @@
+{
+  "session_id": "362a528c14fd7b5f",
+  "created_at": "2025-09-18T06:26:55.183015",
+  "language": "English",
+  "question": "",
+  "transcription": null,
+  "query_augmented": "",
+  "location": "",
+  "crop": "banana",
+  "weather_info": "",
+  "image_saved": true,
+  "image_preview": "/static/uploads/362a528c14fd7b5f_img.jpg",
+  "answer": "Please provide the image so I can analyze the banana plant symptoms.  Once I have that information, I can offer more specific advice.\n\nIn the meantime, here's some general advice on banana cultivation and accessing financial support:\n\n**Banana Cultivation:**  (I need the image to give specific advice on plant health.)\n\n**Financial Support:**\n\n* **Kisan Credit Card (KCC):** Consider applying for a KCC to access credit for banana cultivation, including inputs, post-harvest activities, and allied activities.  Required documents include Aadhaar, land records, bank passbook, passport photo, and KYC.  Visit your nearest bank branch or Common Service Center (CSC) to apply. [kcc]  Remember to check the current limits and eligibility with your bank. [kcc]\n\n* **Agricultural Loans & Interest Subvention:**  Explore short-term crop loans with interest subvention schemes to reduce borrowing costs.  The KCC can be used as an entry point for accessing these loans.  Check for current year notifications on eligible loan ceilings and subvention rates. [loans_overview]  Prompt repayment can lead to further reductions in interest rates. [loans_overview]\n\n* **Crop Insurance:** Consider crop insurance to protect against potential losses. Ensure timely enrollment at the beginning of the season and keep proper documentation (photos, dates, neighbour statements, receipts) in case of a claim. [insurance_overview]\n\n\nOnce you provide the image, I can provide more tailored advice.",
+  "messages": [
+    {
+      "role": "user",
+      "text": "",
+      "ts": "2025-09-18T06:26:55.183015"
+    },
+    {
+      "role": "assistant",
+      "text": "Please provide the image so I can analyze the banana plant symptoms.  Once I have that information, I can offer more specific advice.\n\nIn the meantime, here's some general advice on banana cultivation and accessing financial support:\n\n**Banana Cultivation:**  (I need the image to give specific advice on plant health.)\n\n**Financial Support:**\n\n* **Kisan Credit Card (KCC):** Consider applying for a KCC to access credit for banana cultivation, including inputs, post-harvest activities, and allied activities.  Required documents include Aadhaar, land records, bank passbook, passport photo, and KYC.  Visit your nearest bank branch or Common Service Center (CSC) to apply. [kcc]  Remember to check the current limits and eligibility with your bank. [kcc]\n\n* **Agricultural Loans & Interest Subvention:**  Explore short-term crop loans with interest subvention schemes to reduce borrowing costs.  The KCC can be used as an entry point for accessing these loans.  Check for current year notifications on eligible loan ceilings and subvention rates. [loans_overview]  Prompt repayment can lead to further reductions in interest rates. [loans_overview]\n\n* **Crop Insurance:** Consider crop insurance to protect against potential losses. Ensure timely enrollment at the beginning of the season and keep proper documentation (photos, dates, neighbour statements, receipts) in case of a claim. [insurance_overview]\n\n\nOnce you provide the image, I can provide more tailored advice.",
+      "ts": "2025-09-18T06:26:55.183015"
+    }
+  ],
+  "image_path": "F:\\KissanConnect\\website_new\\output\\uploads\\362a528c14fd7b5f_img.jpg"
+}

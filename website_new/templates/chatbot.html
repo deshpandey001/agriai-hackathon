@@ -6,6 +6,12 @@
   <title>Chatbot - KrishiConnect</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+  <style>
+    /* small adjustments to improve readability */
+    #messages { height: 420px; overflow:auto; padding:10px; background:#fafafa; border-radius:6px; }
+    .context-card { background:#fff9e6; border-left:4px solid #f5c242; padding:12px; margin-bottom:10px; border-radius:6px; }
+    .session-meta { font-size:0.9rem; color:#6b7280; }
+  </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
@@ -17,9 +23,21 @@
   </div>
 </nav>
 
-<div class="container" style="margin-top:30px">
+<div class="container" style="margin-top:30px; max-width:900px;">
   <div class="card p-3 shadow">
-    <div id="messages" style="height:420px;overflow:auto;padding:10px;background:#fafafa;border-radius:6px"></div>
+
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <label class="mb-0 me-2">Context:</label>
+      <select id="sessionSelect" class="form-select form-select-sm" style="width:360px;">
+        <option value="">Start new chat</option>
+      </select>
+      <button id="refreshSessions" class="btn btn-sm btn-outline-secondary">Refresh</button>
+      <div class="ms-auto session-meta" id="sessionInfo"></div>
+    </div>
+
+    <div id="contextArea" class="mb-3"></div>
+
+    <div id="messages"></div>
 
     <div class="input-group mt-3">
       <input id="msg" class="form-control" placeholder="Ask a question..." />
@@ -29,47 +47,146 @@
 </div>
 
 <script>
-function append(who, text){
-  const d = document.createElement('div');
-  d.className = who==='user' ? 'text-end my-2' : 'text-start my-2';
-  d.innerHTML = '<div class="d-inline-block p-2 rounded '+(who==='user'?'bg-success text-white':'bg-light')+'">' + text + '</div>';
-  const box = document.getElementById('messages');
-  box.appendChild(d);
-  box.scrollTop = box.scrollHeight;
-}
+  // DOM helpers
+  function ele(tag, cls, html){ const d = document.createElement(tag); if(cls) d.className = cls; if(html) d.innerHTML = html; return d; }
 
-document.getElementById('send').addEventListener('click', async ()=>{
-  const q = document.getElementById('msg').value.trim();
-  if(!q) return;
-  append('user', q);
-  document.getElementById('msg').value = '';
-  append('bot', 'Thinking...');
-  try{
-    const res = await fetch('{{ url_for("api_chat") }}', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({message: q, language: 'English'})
-    });
-    const j = await res.json();
+  // append a message bubble; who = 'user' or 'bot' or 'system'
+  function append(who, text){
     const box = document.getElementById('messages');
-    if(box.lastChild) box.lastChild.remove();  // remove 'Thinking...'
-    if(res.ok && j.ok){
-      append('bot', j.answer.replace(/\n/g,'<br>'));
-    } else {
-      append('bot', j.error || 'No answer');
-    }
-  }catch(e){
-    console.error(e);
-    const box = document.getElementById('messages');
-    if(box.lastChild) box.lastChild.remove();
-    append('bot', 'Request failed — is the backend running?');
+    const d = document.createElement('div');
+    d.className = who==='user' ? 'text-end my-2' : 'text-start my-2';
+    const cls = who==='user' ? 'bg-success text-white' : (who==='system' ? 'bg-secondary text-white' : 'bg-light');
+    d.innerHTML = '<div class="d-inline-block p-2 rounded '+cls+'">' + text + '</div>';
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
   }
-});
 
-// allow enter key
-document.getElementById('msg').addEventListener('keypress', function(e){
-  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('send').click(); }
-});
+  // clear messages area
+  function clearMessages(){ document.getElementById('messages').innerHTML = ''; }
+
+  // current selected session id (empty means new chat)
+  let currentSessionId = '';
+
+  // load list of sessions into dropdown
+  async function loadSessions(){
+    const sel = document.getElementById('sessionSelect');
+    sel.innerHTML = '<option value="">Start new chat</option>';
+    document.getElementById('sessionInfo').innerText = '';
+    document.getElementById('contextArea').innerHTML = '';
+    clearMessages();
+    try{
+      const res = await fetch('{{ url_for("api_list_sessions") }}');
+      const j = await res.json();
+      if(res.ok && j.ok){
+        j.sessions.forEach(s=>{
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          const q = s.question || '(image/advisory)';
+          opt.text = `${s.id} — ${q.slice(0,80)}`;
+          sel.appendChild(opt);
+        });
+      }
+    }catch(e){
+      console.warn('Failed to load sessions', e);
+    }
+  }
+
+  // fetch a single session and load its context & messages
+  async function loadSession(sessionId){
+    if(!sessionId){
+      // new chat
+      currentSessionId = '';
+      document.getElementById('sessionInfo').innerText = 'New chat (no advisory context)';
+      document.getElementById('contextArea').innerHTML = '';
+      clearMessages();
+      return;
+    }
+    try{
+      const res = await fetch('/api/get_session/' + sessionId);
+      const j = await res.json();
+      if(res.ok && j.ok){
+        currentSessionId = sessionId;
+        const s = j.session;
+        document.getElementById('sessionInfo').innerText = `Session: ${s.session_id} • ${s.created_at || ''}`;
+        // show advisory answer as context
+        const ctx = document.getElementById('contextArea');
+        ctx.innerHTML = '';
+        const title = ele('div','context-card','<strong>Advisory context</strong><div class="session-meta">Question: '+(s.question||'')+'</div>');
+        const answerBlock = ele('div','','<div style="margin-top:6px;white-space:pre-wrap;">'+(s.answer || 'No answer')+'</div>');
+        ctx.appendChild(title);
+        ctx.appendChild(answerBlock);
+
+        // show previous messages
+        clearMessages();
+        if(Array.isArray(s.messages) && s.messages.length){
+          s.messages.forEach(m=>{
+            const role = m.role === 'assistant' ? 'bot' : (m.role === 'system' ? 'system' : 'user');
+            append(role === 'bot' ? 'bot' : (role === 'user' ? 'user' : 'system'), (m.text||'').replace(/\n/g,'<br>'));
+          });
+        } else {
+          // add assistant's advisory answer as initial bot message if messages empty
+          if(s.answer) append('bot', s.answer.replace(/\n/g,'<br>'));
+        }
+      } else {
+        console.warn('session fetch error', j);
+      }
+    }catch(e){
+      console.error('Failed to fetch session', e);
+    }
+  }
+
+  // send chat message; includes currentSessionId if set
+  async function sendMessage(){
+    const q = document.getElementById('msg').value.trim();
+    if(!q) return;
+    append('user', q);
+    document.getElementById('msg').value = '';
+    append('bot', 'Thinking...');
+    try{
+      const payload = { message: q, language: 'English' };
+      if(currentSessionId) payload.session_id = currentSessionId;
+      const res = await fetch('{{ url_for("api_chat") }}', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      const box = document.getElementById('messages');
+      // remove last child (Thinking...)
+      if(box.lastChild) box.lastChild.remove();
+      if(res.ok && j.ok){
+        append('bot', (j.answer||'').replace(/\n/g,'<br>'));
+      } else {
+        append('bot', j.error || 'No answer from server');
+      }
+    }catch(e){
+      console.error(e);
+      const box = document.getElementById('messages');
+      if(box.lastChild) box.lastChild.remove();
+      append('bot', 'Request failed — is the backend running?');
+    }
+  }
+
+  // DOM wiring
+  document.getElementById('send').addEventListener('click', sendMessage);
+  document.getElementById('msg').addEventListener('keypress', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('send').click(); }
+  });
+
+  document.getElementById('sessionSelect').addEventListener('change', function(e){
+    const id = this.value;
+    loadSession(id);
+  });
+
+  document.getElementById('refreshSessions').addEventListener('click', loadSessions);
+
+  // load on start
+  window.addEventListener('DOMContentLoaded', async ()=>{
+    await loadSessions();
+    // default to new chat (empty)
+    document.getElementById('sessionInfo').innerText = 'New chat (no advisory context)';
+    clearMessages();
+  });
 </script>
 </body>
 </html>

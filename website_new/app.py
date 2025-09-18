@@ -1,17 +1,20 @@
-# app.py - Fixed reliable Flask backend for KissanConnect (programs section updated)
+# app.py - KissanConnect Flask backend (session-aware advisory + local whisper transcription)
 import os
 import csv
+import json
 import traceback
+import base64
+import secrets
 from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from flask import Flask, request, jsonify, render_template, send_from_directory
 import requests
 
 # Optional external libs handled gracefully
 try:
-    import google.generativeai as genai
+    import google.generativeai as genai  # for Gemini if available
     HAS_GENAI = True
 except Exception:
     HAS_GENAI = False
@@ -22,6 +25,14 @@ try:
 except Exception:
     HAS_TWILIO = False
 
+# Local whisper (open-source) support (no OpenAI API key required)
+# Install with: pip install -U openai-whisper
+try:
+    import whisper
+    HAS_LOCAL_WHISPER = True
+except Exception:
+    HAS_LOCAL_WHISPER = False
+
 # ---------- Configuration ----------
 APP_NAME = "KissanConnect"
 BASE_DIR = Path(__file__).parent.resolve()
@@ -30,8 +41,10 @@ STATIC_DIR = BASE_DIR / "static"
 KB_DIR = BASE_DIR / "kb"
 PROGRAMS_DIR = KB_DIR / "programs"
 OUTPUT_DIR = BASE_DIR / "output"
+SESSIONS_DIR = OUTPUT_DIR / "sessions"
 UPLOADS_DIR = OUTPUT_DIR / "uploads"
 OUTPUT_DIR.mkdir(exist_ok=True)
+SESSIONS_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 ESCALATION_FILE = OUTPUT_DIR / "escalations.csv"
@@ -39,16 +52,16 @@ FEEDBACK_FILE = OUTPUT_DIR / "feedback.csv"
 CHAT_HISTORY_FILE = OUTPUT_DIR / "chat_history.csv"
 
 # API keys (set in environment)
-GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
 TWILIO_SID = os.environ.get("TWILIO_SID", "")
 TWILIO_TOKEN = os.environ.get("TWILIO_TOKEN", "")
 TWILIO_FROM = os.environ.get("TWILIO_FROM", "")
 
-# Create a single Flask app (no redefinition)
+# Create Flask app
 app = Flask(__name__, template_folder=str(TEMPLATES_DIR), static_folder=str(STATIC_DIR))
 
-# ----------------- Helpers -----------------
+# ----------------- Utilities -----------------
 def ensure_csv_has_header(path: Path, header: List[str]):
     if not path.exists():
         with open(path, "w", newline="", encoding="utf-8") as f:
@@ -56,9 +69,6 @@ def ensure_csv_has_header(path: Path, header: List[str]):
             writer.writeheader()
 
 def safe_render(template_name: str, **kwargs):
-    """
-    Render template but return a readable error page on failure.
-    """
     try:
         return render_template(template_name, **kwargs)
     except Exception:
@@ -138,12 +148,6 @@ def build_weather_message(location: str, interp: Dict, lang: str = "English") ->
 
 # ---------------- Programs loader + classifier ----------------
 def load_program_guides_for_lang(lang: str) -> List[Dict]:
-    """
-    Load program files (language-aware):
-      - English: <name>.txt
-      - Hindi: <name>.hi.txt
-    Returns list of {id, text, source}
-    """
     guides = []
     if not PROGRAMS_DIR.exists():
         return guides
@@ -165,10 +169,6 @@ def load_program_guides_for_lang(lang: str) -> List[Dict]:
     return guides
 
 def classify_programs(guides: List[Dict]) -> Dict[str, List[Dict]]:
-    """
-    Keyword-based classification into categories:
-    Loans, Insurance, Mechanization, Policies & Subsidies, Other
-    """
     mapping = {
         "Loans": [],
         "Insurance": [],
@@ -199,30 +199,100 @@ def prepare_context_text(guides: List[Dict], max_chars_per_file: int = 3500) -> 
         parts.append(f"[{g['id']}]\n" + text)
     return "\n\n".join(parts)
 
-# ---------------- LLM wrapper (Gemini stub) ----------------
+# ---------------- LLM wrapper (Gemini-focused) ----------------
 def generate_answer(prompt_text: str) -> str:
     """
-    Generate a response using Google's Gemini API.
-    Requires GEMINI_API_KEY in environment and google-generativeai installed.
+    Use Gemini if available; otherwise return a helpful fallback message.
     """
     try:
-        import google.generativeai as genai
-        api_key = os.environ.get("GEMINI_API_KEY", "")
-        if not api_key:
-            return "(Gemini not configured: Please set GEMINI_API_KEY)"
-        
-        genai.configure(api_key=api_key)
-        # choose model that you have access to; change if using a different model name
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt_text)
-
-        if hasattr(response, "text") and response.text:
-            return response.text.strip()
-        return str(response)
+        if GEMINI_API_KEY and HAS_GENAI:
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            resp = model.generate_content(prompt_text)
+            text = getattr(resp, "text", None)
+            if text:
+                return text.strip()
+            if isinstance(resp, dict) and "candidates" in resp and resp["candidates"]:
+                return resp["candidates"][0].get("content", str(resp))
+            return str(resp)
+        else:
+            # Not configured: return a clear fallback (useful during dev)
+            return "(LLM not configured) — Gemini API key or SDK missing on server.\n\n" + prompt_text[:1500]
     except Exception as e:
         return f"(Gemini error: {e})"
 
-# ---------------- Twilio send helper ----------------
+# ---------------- Whisper transcription helper (local whisper) ----------------
+# We'll lazily load a whisper model only if transcription is requested.
+_WHISPER_MODEL = None
+def transcribe_audio_from_base64(b64: str, model_size: str = "small") -> Optional[str]:
+    """
+    Transcribe audio using local whisper (no OpenAI API).
+    - b64: data URL (data:audio/..;base64,...) or plain base64 string
+    - model_size: whisper model size to load ("tiny","base","small","medium","large")
+    Returns transcription text or None on failure.
+    """
+    global _WHISPER_MODEL, HAS_LOCAL_WHISPER
+    if not HAS_LOCAL_WHISPER:
+        print("Local whisper not available (install openai-whisper).")
+        return None
+    try:
+        header = None
+        if b64.startswith("data:"):
+            header, b64 = b64.split(",", 1)
+        audio_bytes = base64.b64decode(b64)
+
+        # Save a temporary audio file (whisper uses ffmpeg to read many formats)
+        fname = UPLOADS_DIR / f"audio_{secrets.token_hex(8)}.webm"
+        with open(fname, "wb") as f:
+            f.write(audio_bytes)
+
+        # Lazy-load model (first use)
+        if _WHISPER_MODEL is None:
+            try:
+                # Loading model may download it first time (large!)
+                print(f"Loading whisper model '{model_size}' (this may take time the first run)...")
+                _WHISPER_MODEL = whisper.load_model(model_size)
+            except Exception as e:
+                print("Failed to load whisper model:", e)
+                return None
+
+        # Use whisper to transcribe (it will spawn ffmpeg under the hood)
+        try:
+            result = _WHISPER_MODEL.transcribe(str(fname))
+            # result is typically a dict with 'text' key
+            if isinstance(result, dict) and "text" in result:
+                return result["text"]
+            if hasattr(result, "get") and result.get("text"):
+                return result.get("text")
+            return str(result)
+        except Exception as e:
+            print("Whisper transcription error:", e)
+            return None
+    except Exception as e:
+        print("transcribe_audio_from_base64 error:", e)
+        return None
+
+# New helper: transcribe a saved file path (used by multipart endpoint)
+def transcribe_file_with_whisper(filepath: Path, model_size: str = "small") -> Optional[str]:
+    global _WHISPER_MODEL, HAS_LOCAL_WHISPER
+    if not HAS_LOCAL_WHISPER:
+        print("Local whisper not available when transcribing file.")
+        return None
+    try:
+        if _WHISPER_MODEL is None:
+            print(f"Loading whisper model '{model_size}' for file transcription...")
+            _WHISPER_MODEL = whisper.load_model(model_size)
+        result = _WHISPER_MODEL.transcribe(str(filepath))
+        if isinstance(result, dict) and "text" in result:
+            return result["text"]
+        if hasattr(result, "get") and result.get("text"):
+            return result.get("text")
+        return str(result)
+    except Exception as e:
+        print("transcribe_file_with_whisper error:", e)
+        return None
+
+# ---------------- Twilio helper ----------------
 def send_whatsapp_via_twilio(to_number: str, body_text: str):
     if not HAS_TWILIO or not (TWILIO_SID and TWILIO_TOKEN and TWILIO_FROM and to_number):
         return False, "Twilio not configured on server."
@@ -262,6 +332,32 @@ def calculate_fertilizer(crop: str, area: float, area_unit="hectare"):
         return {"error": f"No fertilizer baseline for {crop}"}
     return {k: round(v * area_ha, 2) for k, v in req.items()}
 
+# ---------------- Session utilities ----------------
+def make_session_id():
+    return secrets.token_hex(8)
+
+def save_session(session_id: str, data: dict):
+    path = SESSIONS_DIR / f"{session_id}.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def load_session(session_id: str) -> Optional[dict]:
+    path = SESSIONS_DIR / f"{session_id}.json"
+    if not path.exists():
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def list_sessions(limit: int = 50) -> List[dict]:
+    out = []
+    for p in sorted(SESSIONS_DIR.glob("*.json"), key=lambda x: x.stat().st_mtime, reverse=True)[:limit]:
+        try:
+            s = json.loads(p.read_text(encoding="utf-8"))
+            out.append({"id": p.stem, "created_at": s.get("created_at"), "question": s.get("question"), "crop": s.get("crop"), "location": s.get("location")})
+        except Exception:
+            continue
+    return out
+
 # ---------------- Template routes ----------------
 @app.route("/")
 def index():
@@ -287,12 +383,10 @@ def crop_calendar_page():
 def fert_page():
     return safe_render("fertilizer-calculator.html")
 
-# Admin/login/signup (these endpoint names must match templates)
 @app.route("/admin")
 def admin_page():
     return safe_render("admin.html")
 
-# static serving
 @app.route("/static/<path:filename>")
 def static_files(filename):
     return send_from_directory(app.static_folder, filename)
@@ -320,43 +414,167 @@ def api_send_whatsapp():
         return jsonify({"ok": True, "info": info})
     return jsonify({"ok": False, "error": info}), 400
 
+# ---------------- New multipart transcription endpoint ----------------
+@app.route("/api/transcribe_local", methods=["POST"])
+def api_transcribe_local():
+    """
+    Accepts multipart form with file field 'audio' (Blob/webm, wav etc).
+    Saves to UPLOADS_DIR then transcribes using local whisper model.
+    Returns JSON: { ok: True, text: "<transcribed text>" } or error.
+    """
+    if 'audio' not in request.files:
+        return jsonify({"ok": False, "error": "No 'audio' file part"}), 400
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return jsonify({"ok": False, "error": "Empty filename"}), 400
+
+    # save file
+    fname = UPLOADS_DIR / f"transcribe_{secrets.token_hex(8)}_{audio_file.filename}"
+    try:
+        audio_file.save(str(fname))
+    except Exception as e:
+        print("Failed to save uploaded audio:", e)
+        return jsonify({"ok": False, "error": "Failed to save audio"}), 500
+
+    # transcribe using whisper
+    if not HAS_LOCAL_WHISPER:
+        print("Transcription requested but whisper not installed.")
+        return jsonify({"ok": False, "error": "Local whisper not installed on server. Install 'openai-whisper'."}), 500
+
+    text = transcribe_file_with_whisper(fname, model_size="small")
+    if text is None:
+        return jsonify({"ok": False, "error": "Transcription failed (check server logs for details)"}), 500
+
+    return jsonify({"ok": True, "text": text})
+
 @app.route("/api/get_advice", methods=["POST"])
 def api_get_advice():
+    """
+    New: creates and returns a session_id. Accepts:
+      { query, location, crop, language, image_base64 (data url), audio_base64 (data url) }
+    """
     j = request.get_json(force=True)
-    query = j.get("query", "")
-    location = j.get("location", "")
-    crop = j.get("crop", "")
+    query = j.get("query", "").strip()
+    location = j.get("location", "").strip()
+    crop = j.get("crop", "").strip()
     lang = j.get("language", "English")
     image_b64 = j.get("image_base64")
+    audio_b64 = j.get("audio_base64")
+
+    if not query and not image_b64 and not audio_b64:
+        return jsonify({"ok": False, "error": "Please send a question, or an image/audio for analysis."}), 400
+
+    transcription = None
+    if audio_b64:
+        transcription = transcribe_audio_from_base64(audio_b64)
+        if transcription:
+            query = (query + "\n\n[User voice transcription: " + transcription + "]").strip()
+
     guides = load_program_guides_for_lang(lang)
-    context_text = prepare_context_text(guides[:3])
+    context_text = prepare_context_text(guides[:3]) if guides else ""
+
+    weather_info = ""
+    weather_keywords = ['weather', 'forecast', 'temperature', 'rain', 'irrigate', 'spray', 'humidity']
+    if any(k in (query or "").lower() for k in weather_keywords) and location:
+        raw = fetch_weather_raw(location)
+        if raw:
+            interp = interpret_weather_conditions(raw)
+            weather_info = build_weather_message(location, interp, lang=lang)
+
     system_prompt = (
         "You are KrishiAdviser — a concise practical agricultural assistant.\n"
         f"Location: {location}\nCrop: {crop}\nLanguage: {lang}\n"
+        f"Weather: {weather_info}\n"
         "Use the following sources when relevant and cite them in square brackets.\n"
     )
+
+    image_note = ""
+    if image_b64:
+        image_note = "[Image attached: analyze plant symptoms if this is a plant photo.]\n"
+
     prompt_parts = ["SYSTEM:\n" + system_prompt]
     if context_text:
         prompt_parts.append("SOURCES:\n" + context_text)
+    if image_note:
+        prompt_parts.append("IMAGE:\n" + image_note)
     if query:
         prompt_parts.append("USER QUERY:\n" + query)
     prompt_text = "\n\n".join(prompt_parts)
-    if image_b64:
-        prompt_text += "\n\n[Image attached — analyze visually if possible]\n" + (image_b64[:4000] if isinstance(image_b64, str) else "")
+
     answer = generate_answer(prompt_text)
-    row = {
-        "timestamp": datetime.utcnow().isoformat(),
+
+    sid = make_session_id()
+    created_at = datetime.utcnow().isoformat()
+    session = {
+        "session_id": sid,
+        "created_at": created_at,
+        "language": lang,
+        "question": j.get("query", ""),
+        "transcription": transcription,
+        "query_augmented": query,
         "location": location,
         "crop": crop,
-        "query": query,
-        "answer_excerpt": answer[:500],
+        "weather_info": weather_info,
+        "image_saved": False,
+        "image_preview": None,
+        "answer": answer,
+        "messages": [
+            {"role": "user", "text": j.get("query", ""), "ts": created_at},
+            {"role": "assistant", "text": answer, "ts": created_at}
+        ]
+    }
+
+    if image_b64:
+        try:
+            header = None
+            if image_b64.startswith("data:"):
+                header, image_b64 = image_b64.split(",", 1)
+            img_bytes = base64.b64decode(image_b64)
+            img_name = UPLOADS_DIR / f"{sid}_img.jpg"
+            with open(img_name, "wb") as f:
+                f.write(img_bytes)
+            session["image_saved"] = True
+            session["image_path"] = str(img_name)
+            # we place uploads into static/uploads to be served
+            static_uploads = Path(app.static_folder) / "uploads"
+            static_uploads.mkdir(parents=True, exist_ok=True)
+            # copy saved file to static/uploads
+            to_static = static_uploads / img_name.name
+            with open(to_static, "wb") as outf:
+                outf.write(img_bytes)
+            session["image_preview"] = f"/static/uploads/{img_name.name}"
+        except Exception as e:
+            print("Failed to save image:", e)
+
+    save_session(sid, session)
+
+    row = {
+        "timestamp": created_at,
+        "session_id": sid,
+        "location": location,
+        "crop": crop,
+        "query": j.get("query", ""),
+        "answer_excerpt": answer[:300],
         "language": lang,
     }
     ensure_csv_has_header(FEEDBACK_FILE, list(row.keys()))
     with open(FEEDBACK_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(row.keys()))
         writer.writerow(row)
-    return jsonify({"ok": True, "answer": answer})
+
+    return jsonify({"ok": True, "session_id": sid, "answer": answer, "image_preview": session.get("image_preview")})
+
+@app.route("/api/list_sessions", methods=["GET"])
+def api_list_sessions():
+    s = list_sessions(limit=100)
+    return jsonify({"ok": True, "sessions": s})
+
+@app.route("/api/get_session/<session_id>", methods=["GET"])
+def api_get_session(session_id: str):
+    s = load_session(session_id)
+    if not s:
+        return jsonify({"ok": False, "error": "Session not found"}), 404
+    return jsonify({"ok": True, "session": s})
 
 @app.route("/api/programs_query", methods=["POST"])
 def api_programs_query():
@@ -382,29 +600,58 @@ def api_programs_query():
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
     j = request.get_json(force=True)
-    user_msg = j.get("message", "")
-    context_answer = j.get("context_answer", "")
+    user_msg = (j.get("message") or "").strip()
+    session_id = j.get("session_id")
     lang = j.get("language", "English")
+
+    if not user_msg:
+        return jsonify({"ok": False, "error": "Message is empty"}), 400
+
     sys_prompt = "You are KrishiAdviser Chatbot. Keep answers short and practical."
-    if context_answer:
-        sys_prompt += "\nPrevious advice (context):\n" + context_answer
+    context_answer = ""
+    if session_id:
+        s = load_session(session_id)
+        if s:
+            context_answer = s.get("answer", "")
+            prev_msgs = s.get("messages", [])
+            ctx_lines = []
+            for m in prev_msgs[-6:]:
+                role = m.get("role")
+                txt = m.get("text", "")
+                ctx_lines.append(f"[{role}] {txt}")
+            ctx_block = "\n".join(ctx_lines)
+            sys_prompt += "\nPrevious advisory session context:\n" + ctx_block
+
     if lang.lower().startswith("h"):
         sys_prompt += "\nRespond in Hindi."
     else:
         sys_prompt += "\nRespond in English."
+
     prompt_text = "SYSTEM:\n" + sys_prompt + "\nUSER:\n" + user_msg
+    if context_answer:
+        prompt_text += "\n\nCONTEXT ADVICE:\n" + context_answer
+
     answer = generate_answer(prompt_text)
+
     row = {
         "timestamp": datetime.utcnow().isoformat(),
-        "context": context_answer[:200],
+        "session_id": session_id or "",
         "message": user_msg,
-        "answer": answer[:2000],
+        "answer": answer,
         "language": lang,
     }
     ensure_csv_has_header(CHAT_HISTORY_FILE, list(row.keys()))
     with open(CHAT_HISTORY_FILE, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(row.keys()))
         writer.writerow(row)
+
+    if session_id:
+        s = load_session(session_id)
+        if s:
+            s.setdefault("messages", []).append({"role": "user", "text": user_msg, "ts": datetime.utcnow().isoformat()})
+            s.setdefault("messages", []).append({"role": "assistant", "text": answer, "ts": datetime.utcnow().isoformat()})
+            save_session(session_id, s)
+
     return jsonify({"ok": True, "answer": answer})
 
 @app.route("/api/fertilizer_calc", methods=["POST"])
@@ -422,21 +669,15 @@ def api_crop_calendar():
 
 @app.route("/api/list_programs", methods=["POST"])
 def api_list_programs():
-    """
-    Accepts { language: "English"|"Hindi", category: <category name or empty> }
-    Returns compact program listing (id, title, excerpt, source).
-    If category is present, returns only docs in that category; otherwise returns all docs.
-    """
     j = request.get_json() or {}
     lang = j.get("language", "English")
-    category = j.get("category", "")  # optionally filter
+    category = j.get("category", "")
     guides = load_program_guides_for_lang(lang)
     cat_map = classify_programs(guides)
     out_list = []
     if category and category in cat_map:
         sel = cat_map.get(category, [])
     else:
-        # flatten all categories
         sel = []
         for v in cat_map.values():
             sel.extend(v)
@@ -445,6 +686,7 @@ def api_list_programs():
             "id": g["id"],
             "title": g["id"],
             "excerpt": g["text"][:250].replace("\n", " "),
+            "text": g["text"],
             "source": g["source"]
         })
     return jsonify({"ok": True, "programs": out_list})

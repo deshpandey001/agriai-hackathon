@@ -1,0 +1,26 @@
+{
+  "session_id": "b224919b8fcb21b1",
+  "created_at": "2025-09-18T06:45:15.947165",
+  "language": "English",
+  "question": "banana leaves are drying up",
+  "transcription": null,
+  "query_augmented": "banana leaves are drying up",
+  "location": "",
+  "crop": "coconut",
+  "weather_info": "",
+  "image_saved": true,
+  "image_preview": "/static/uploads/726d59009af60ce5.jpg",
+  "answer": "The query mentions banana leaves drying up, but the provided context is about coconut crops.  I need information about the banana crop to help.  Please provide details about the banana plants, including:\n\n* **Location:** Specific region or area where the bananas are grown.\n* **Weather conditions:** Recent rainfall, temperature, humidity levels, and any unusual weather events.\n* **Plant age and variety:**  The age of the banana plants and the specific variety.\n* **Irrigation:** How often are the plants watered, and what is the water source?\n* **Soil:** Soil type, drainage, and nutrient levels.  Have you had a soil test recently?\n* **Fertilization:** What type and amount of fertilizer have you applied recently?\n* **Pest and disease:** Have you observed any pests or diseases on the plants?  Describe any symptoms you see beyond the leaf drying.\n* **Image:**  While the provided image is for a coconut plant, if you have an image of the affected banana leaves, that would be very helpful.\n\nOnce I have this information, I can provide more specific advice.",
+  "messages": [
+    {
+      "role": "user",
+      "text": "banana leaves are drying up",
+      "ts": "2025-09-18T06:45:15.947165"
+    },
+    {
+      "role": "assistant",
+      "text": "The query mentions banana leaves drying up, but the provided context is about coconut crops.  I need information about the banana crop to help.  Please provide details about the banana plants, including:\n\n* **Location:** Specific region or area where the bananas are grown.\n* **Weather conditions:** Recent rainfall, temperature, humidity levels, and any unusual weather events.\n* **Plant age and variety:**  The age of the banana plants and the specific variety.\n* **Irrigation:** How often are the plants watered, and what is the water source?\n* **Soil:** Soil type, drainage, and nutrient levels.  Have you had a soil test recently?\n* **Fertilization:** What type and amount of fertilizer have you applied recently?\n* **Pest and disease:** Have you observed any pests or diseases on the plants?  Describe any symptoms you see beyond the leaf drying.\n* **Image:**  While the provided image is for a coconut plant, if you have an image of the affected banana leaves, that would be very helpful.\n\nOnce I have this information, I can provide more specific advice.",
+      "ts": "2025-09-18T06:45:15.947165"
+    }
+  ]
+}

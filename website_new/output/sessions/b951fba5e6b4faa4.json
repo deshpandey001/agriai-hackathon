@@ -1,0 +1,26 @@
+{
+  "session_id": "b951fba5e6b4faa4",
+  "created_at": "2025-09-18T06:18:25.467045",
+  "language": "English",
+  "question": "banana leaves are drying up",
+  "transcription": null,
+  "query_augmented": "banana leaves are drying up",
+  "location": "",
+  "crop": "banana",
+  "weather_info": "",
+  "image_saved": false,
+  "image_preview": null,
+  "answer": "Drying banana leaves can indicate several issues.  To diagnose the problem and find solutions, I need more information.  Please describe:\n\n* **Extent of the problem:** Are only a few leaves affected, or is it most of the plant?  Are the leaves drying from the tips, edges, or uniformly?\n* **Leaf appearance:** Are the leaves yellowing before drying, or are they browning or blackening? Are there any spots or lesions on the leaves?\n* **Soil conditions:** Is the soil moist or dry? Is there good drainage?  What type of soil is it?\n* **Watering practices:** How often and how much are you watering?\n* **Recent weather:** Has there been a prolonged period of hot, dry weather, or unusually strong winds?\n* **Pest or disease signs:** Are there any visible insects or signs of disease (e.g., fungal growth)?\n\n\nOnce I have this information, I can provide more specific advice.",
+  "messages": [
+    {
+      "role": "user",
+      "text": "banana leaves are drying up",
+      "ts": "2025-09-18T06:18:25.467045"
+    },
+    {
+      "role": "assistant",
+      "text": "Drying banana leaves can indicate several issues.  To diagnose the problem and find solutions, I need more information.  Please describe:\n\n* **Extent of the problem:** Are only a few leaves affected, or is it most of the plant?  Are the leaves drying from the tips, edges, or uniformly?\n* **Leaf appearance:** Are the leaves yellowing before drying, or are they browning or blackening? Are there any spots or lesions on the leaves?\n* **Soil conditions:** Is the soil moist or dry? Is there good drainage?  What type of soil is it?\n* **Watering practices:** How often and how much are you watering?\n* **Recent weather:** Has there been a prolonged period of hot, dry weather, or unusually strong winds?\n* **Pest or disease signs:** Are there any visible insects or signs of disease (e.g., fungal growth)?\n\n\nOnce I have this information, I can provide more specific advice.",
+      "ts": "2025-09-18T06:18:25.467045"
+    }
+  ]
+}

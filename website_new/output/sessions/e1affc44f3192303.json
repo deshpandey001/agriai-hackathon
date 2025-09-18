@@ -1,0 +1,26 @@
+{
+  "session_id": "e1affc44f3192303",
+  "created_at": "2025-09-18T06:43:24.316507",
+  "language": "English",
+  "question": "coconut has been attacked by red weevil",
+  "transcription": null,
+  "query_augmented": "coconut has been attacked by red weevil",
+  "location": "",
+  "crop": "banana",
+  "weather_info": "",
+  "image_saved": true,
+  "image_preview": "/static/uploads/283e10f7a8be0b9b.jpg",
+  "answer": "The query mentions coconut, but the user's provided context is about bananas.  I need information about banana pests and diseases to assist.  The provided image ([Image saved at /static/uploads/283e10f7a8be0b9b.jpg]) is crucial for diagnosis.  Please provide the image's analysis.",
+  "messages": [
+    {
+      "role": "user",
+      "text": "coconut has been attacked by red weevil",
+      "ts": "2025-09-18T06:43:24.316507"
+    },
+    {
+      "role": "assistant",
+      "text": "The query mentions coconut, but the user's provided context is about bananas.  I need information about banana pests and diseases to assist.  The provided image ([Image saved at /static/uploads/283e10f7a8be0b9b.jpg]) is crucial for diagnosis.  Please provide the image's analysis.",
+      "ts": "2025-09-18T06:43:24.316507"
+    }
+  ]
+}
