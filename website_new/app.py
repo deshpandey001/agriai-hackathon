@@ -207,7 +207,7 @@ def generate_answer(prompt_text: str) -> str:
     try:
         if GEMINI_API_KEY and HAS_GENAI:
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-2.5-flash")
             resp = model.generate_content(prompt_text)
             text = getattr(resp, "text", None)
             if text:
